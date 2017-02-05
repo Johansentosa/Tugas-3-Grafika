@@ -50,10 +50,10 @@ void setColor(Color* c, char r, char g, char b) {
 }
 
 void changeARGB(int location, Color* c) {
-    *(fbp + location) = c -> b;
-    *(fbp + location + 1) = c -> g;
-    *(fbp + location + 2) = c -> r;
-    *(fbp + location + 3) = c -> a;
+    *(fbp + location) = c -> a;
+    *(fbp + location + 1) = c -> r;
+    *(fbp + location + 2) = c -> g;
+    *(fbp + location + 3) = c -> b;
 }
 
 void clearScreen(Color* c) {
@@ -266,8 +266,23 @@ void* drawPlane() {
 
 void* drawLasergun() {
 	Point bottomGun, mouthGun;
-    Color c; setColor(&c, 255, 255, 255);
-    setPoint(&bottomGun, vinfo.xres / 2, vinfo.yres - 1); // berada di tengah bawah
+    Point* box, boxFirePoint;
+    int i;
+    Color c; setColor(&c, 0, 255, 255);
+    Color cBox; setColor(&cBox, 0, 255, 0);
+    //Membuat kotak tembak
+    setPoint(&box[0], vinfo.xres/2 - 40, vinfo.yres -1);
+    setPoint(&box[1], vinfo.xres/2 + 40, vinfo.yres -1);
+    setPoint(&box[2], vinfo.xres/2 + 40, vinfo.yres -40);
+    setPoint(&box[3], vinfo.xres/2 - 40, vinfo.yres -40);
+    for(i = 0; i < 3; i++) {
+        drawLine(&box[i], &box[i + 1], &cBox);
+    }
+    drawLine(&box[0], &box[i], &cBox);
+    setPoint(&boxFirePoint, vinfo.xres/2, vinfo.yres - 20);
+    solidFill(boxFirePoint, cBox);
+
+    setPoint(&bottomGun, vinfo.xres / 2, vinfo.yres - 40); // berada di tengah bawah
     int moveLeft = 1; // moveLeft = 1 berarti arah mulut geser ke kiri
     int lengthGun = 100; // panjang dari bawah sampe atas
     // laser ditembakkan dari titik srcBeam ke destBeam
@@ -301,7 +316,7 @@ void* drawLasergun() {
 
 void* drawBeam() {
 	Point srcBeam, destBeam;
-    Color c; setColor(&c, 0, 0, 255);
+    Color c; setColor(&c, 255, 0, 255);
     char stroke;
     while(!kaboom) {
         stroke = fgetc(stdin);
