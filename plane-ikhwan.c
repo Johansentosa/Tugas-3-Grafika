@@ -155,52 +155,54 @@ void drawLine(Point* p1, Point* p2, Color* c) {
     }
 }
 
-void solidFill(Point firepoint, Color c){
+void solidFill(Point* firepoint, Color c){
     Point newfp;
     
-    newfp.x = firepoint.x+1;
-    newfp.y = firepoint.y;
-    long location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
-    if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
-        //ganti jadi rgb yang di mau buat gnti warna
-        *(fbp + location) =c.a;
-        *(fbp + location +1) = c.r;
-        *(fbp + location +2) = c.g;
-        *(fbp + location + 3) = c.b;
-        solidFill(newfp, c);
-    }
-    
-    newfp.x = firepoint.x-1;
-    newfp.y = firepoint.y;
-    location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
-    if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
-        *(fbp + location) =c.a;
-        *(fbp + location +1) = c.r;
-        *(fbp + location +2) = c.g;
-        *(fbp + location + 3) = c.b;
-        solidFill(newfp, c);
-    }
-    
-    newfp.x = firepoint.x;
-    newfp.y = firepoint.y+1;
-    location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
-    if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
-        *(fbp + location) =c.a;
-        *(fbp + location +1) = c.r;
-        *(fbp + location +2) = c.g;
-        *(fbp + location + 3) = c.b;
-        solidFill(newfp, c);
-    }
-    
-    newfp.x = firepoint.x;
-    newfp.y = firepoint.y-1;
-    location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
-    if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
-        *(fbp + location) =c.a;
-        *(fbp + location +1) = c.r;
-        *(fbp + location +2) = c.g;
-        *(fbp + location + 3) = c.b;
-        solidFill(newfp, c);
+    if(firepoint->x>1 && firepoint->x<vinfo.xres-1 && firepoint->y>1 && firepoint->y<vinfo.yres-1){
+        newfp.x = firepoint->x+1;
+        newfp.y = firepoint->y;
+        long location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
+            //ganti jadi rgb yang di mau buat gnti warna
+            *(fbp + location) =c.a;
+            *(fbp + location +1) = c.r;
+            *(fbp + location +2) = c.g;
+            *(fbp + location + 3) = c.b;
+            solidFill(&newfp, c);
+        }
+        
+        newfp.x = firepoint->x-1;
+        newfp.y = firepoint->y;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
+            *(fbp + location) =c.a;
+            *(fbp + location +1) = c.r;
+            *(fbp + location +2) = c.g;
+            *(fbp + location + 3) = c.b;
+            solidFill(&newfp, c);
+        }
+        
+        newfp.x = firepoint->x;
+        newfp.y = firepoint->y+1;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
+            *(fbp + location) =c.a;
+            *(fbp + location +1) = c.r;
+            *(fbp + location +2) = c.g;
+            *(fbp + location + 3) = c.b;
+            solidFill(&newfp, c);
+        }
+        
+        newfp.x = firepoint->x;
+        newfp.y = firepoint->y-1;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==0 && *(fbp + location +1)==0 && *(fbp + location +2) ==0){
+            *(fbp + location) =c.a;
+            *(fbp + location +1) = c.r;
+            *(fbp + location +2) = c.g;
+            *(fbp + location + 3) = c.b;
+            solidFill(&newfp, c);
+        }
     }
 }
 
@@ -208,7 +210,8 @@ void* drawPlane() {
     Color c, cDestroy;
     setColor(&c, 255, 0, 0);
     setColor(&cDestroy, 255, 255, 0);
-    Point* plane, temp; // kumpulan titik yang membentuk gambar pesawat
+    Point* plane; // kumpulan titik yang membentuk gambar pesawat
+    Point temp;
     plane = (Point*) malloc(6 * sizeof(Point));
     int lengthPlane = 260; // panjang pesawat dari head sampai tail
     tailPlane = vinfo.xres;
@@ -218,6 +221,13 @@ void* drawPlane() {
     while (!kaboom) { // selama pesawat belum ketembak
         while (headPlane > 0) { // selama pesawat belum mentok di kiri
             if (kaboom) { // pesawat kena tembak
+                //Hapus warna pesawat
+                /*setPoint(&temp, plane[1].x, 60);
+                solidFill(temp, bg);
+                setPoint(&temp, plane[3].x, 30);
+                solidFill(temp, bg);*/
+                //Buat poligon tertembak
+
                 setPoint(&plane[0], headPlane, 90);
                 setPoint(&plane[1], headPlane + 60, 20);
                 setPoint(&plane[2], headPlane + 160, 30);
@@ -229,8 +239,9 @@ void* drawPlane() {
                     drawLine(&plane[j], &plane[j + 1], &cDestroy);
                 }
                 drawLine(&plane[5], &plane[0], &cDestroy);
+                //Warnai
                 setPoint(&temp, plane[2].x, 50);
-                solidFill(temp, cDestroy);
+                solidFill(&temp, cDestroy);
                 break;
             } else { // masih terbang
                 setPoint(&plane[0], headPlane, 90);
@@ -244,17 +255,18 @@ void* drawPlane() {
                     drawLine(&plane[j], &plane[j + 1], &c);
                 }
                 drawLine(&plane[5], &plane[0], &c);
+                // Warnai
                 setPoint(&temp, plane[1].x, 60);
-                solidFill(temp, c);
+                solidFill(&temp, c);
                 setPoint(&temp, plane[3].x, 30);
-                solidFill(temp, c);
+                solidFill(&temp, c);
                 usleep(500);
+
                 // hapus
                 for(j = 0; j < 5; j++) {
                     drawLine(&plane[j], &plane[j + 1], &bg);
                 }
                 drawLine(&plane[5], &plane[0], &bg);
-                
                 headPlane--;
                 tailPlane--;
             }
@@ -266,7 +278,9 @@ void* drawPlane() {
 
 void* drawLasergun() {
 	Point bottomGun, mouthGun;
-    Point* box, boxFirePoint;
+    Point* box;
+    Point boxFirePoint;
+    box = (Point*) malloc(4*sizeof(Point));
     int i;
     Color c; setColor(&c, 0, 255, 255);
     Color cBox; setColor(&cBox, 0, 255, 0);
@@ -280,7 +294,7 @@ void* drawLasergun() {
     }
     drawLine(&box[0], &box[i], &cBox);
     setPoint(&boxFirePoint, vinfo.xres/2, vinfo.yres - 20);
-    solidFill(boxFirePoint, cBox);
+    solidFill(&boxFirePoint, cBox);
 
     setPoint(&bottomGun, vinfo.xres / 2, vinfo.yres - 40); // berada di tengah bawah
     int moveLeft = 1; // moveLeft = 1 berarti arah mulut geser ke kiri
@@ -308,7 +322,7 @@ void* drawLasergun() {
         setPoint(&mouthGun, srcXBeam, srcYBeam);
         // gambar
         drawLine(&bottomGun, &mouthGun, &c);
-        usleep(1000);
+        usleep(2000);
         // hapus
         drawLine(&bottomGun, &mouthGun, &bg);
     }
@@ -365,7 +379,7 @@ void connectBuffer() {
 }
 
 int main() {
-    setColor(&bg, 0, 0, 0);
+    setColor(&bg, 0, 0, 255);
     connectBuffer();
     clearScreen(&bg);
     pthread_t thrPlane, thrLasergun, thrBeam;
