@@ -492,6 +492,7 @@ void drawBoxgun() {
     setPoint(&boxFirePoint, vinfo.xres/2, vinfo.yres - 20);
     solidFill(&boxFirePoint, cBox);
 }
+
 void* drawLasergun() {
 	Point bottomGun, mouthGun;
 	Color c; setColor(&c, 0, 255, 255);
