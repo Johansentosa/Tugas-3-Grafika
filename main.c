@@ -208,45 +208,222 @@ void solidFill(Point* firepoint, Color c){
     }
 }
 
+void falldown4point(Point* p, Point firepoint, Color c) {
+	int i, j;
+	int minY = p[0].y;
+	int minX = p[0].x;
+	int maxX = p[0].x;
+
+	//cari titik terbawah dan teratas
+	for (i=1; i<4; i++) {
+		if (p[i].y>minY)
+			minY = p[i].y;
+	}
+
+	//cari titik terkiri dan terkanan
+	for (i=1; i<4; i++) {
+		if (p[i].x > maxX)
+			maxX = p[i].x;
+		if (p[i].x < minX)
+			minX = p[i].x;
+	}
+
+	while (minY < vinfo.yres-40) {
+		//hapus
+		for (i=0; i<3; i++) {
+			drawLine(&p[i], &p[i + 1], &bg);
+	    }
+	    drawLine(&p[3], &p[0], &bg);
+
+	    for(int x=minX; x<=maxX; x++){
+			for(int y=0; y<minY; y++){
+				long location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
+				*(fbp + location) =0;
+				*(fbp + location +1) = 0;
+				*(fbp + location +2) = 0;
+				*(fbp + location + 3) = 0;
+			}
+		}
+
+	    //gambar ulang
+		for (i=0; i<4; i++) {
+			setPoint(&p[i], p[i].x, p[i].y+1);
+		}
+		for (i=0; i<3; i++) {
+			drawLine(&p[i], &p[i + 1], &c);
+	    }
+	    drawLine(&p[3], &p[0], &c);
+	    //warnai ulang
+	    setPoint(&firepoint, firepoint.x, firepoint.y+1);
+	    solidFill(&firepoint, c);
+	    minY++;
+	}
+}
+void drawPlaneBreak(Point* plane) {
+	Color cDestroy;
+	setColor(&cDestroy, 255, 255, 255);
+	int i, j;
+	Point* planeBreak1;
+	Point* planeBreak2;
+	Point* planeBreak3;
+	Point temp1, temp2, temp3;
+	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
+
+	//Buat bagian plane 1
+	setPoint(&planeBreak1[0], plane[0].x, plane[0].y);
+	setPoint(&planeBreak1[1], plane[1].x, plane[1].y);
+	setPoint(&planeBreak1[2], plane[1].x+50, plane[2].y);
+	setPoint(&planeBreak1[3], plane[0].x+60, plane[0].y);
+	for(i = 0; i < 3; i++) {
+        drawLine(&planeBreak1[i], &planeBreak1[i + 1], &cDestroy);
+    }
+    drawLine(&planeBreak1[3], &planeBreak1[0], &cDestroy);
+    //Warnai
+    setPoint(&temp1, planeBreak1[1].x, planeBreak1[1].y+20);
+    solidFill(&temp1, cDestroy);
+
+	//Buat bagian plane 2
+	setPoint(&planeBreak2[0], planeBreak1[2].x+10, planeBreak1[2].y);
+	setPoint(&planeBreak2[1], plane[2].x+10, plane[2].y);
+	setPoint(&planeBreak2[2], plane[5].x+10, plane[5].y);
+	setPoint(&planeBreak2[3], planeBreak1[3].x+10, planeBreak1[3].y);
+	for(i = 0; i < 3; i++) {
+        drawLine(&planeBreak2[i], &planeBreak2[i + 1], &cDestroy);
+    }
+    drawLine(&planeBreak2[3], &planeBreak2[0], &cDestroy);
+    //Warnai
+    setPoint(&temp2, planeBreak2[0].x+10, planeBreak2[0].y+20);
+    solidFill(&temp2, cDestroy);
+
+    //Buat bagian plane 3
+	setPoint(&planeBreak3[0], planeBreak2[1].x+10, planeBreak2[1].y);
+	setPoint(&planeBreak3[1], plane[3].x+20, plane[3].y);
+	setPoint(&planeBreak3[2], plane[4].x+20, plane[4].y);
+	setPoint(&planeBreak3[3], planeBreak2[2].x+10, planeBreak2[2].y);
+	for(i = 0; i < 3; i++) {
+        drawLine(&planeBreak3[i], &planeBreak3[i + 1], &cDestroy);
+    }
+    drawLine(&planeBreak3[3], &planeBreak3[0], &cDestroy);
+    //Warnai
+    setPoint(&temp3, planeBreak3[0].x+10, planeBreak3[0].y);
+    solidFill(&temp3, cDestroy);
+
+    //Jatuhkan
+    falldown4point(planeBreak1, temp1, cDestroy);
+    falldown4point(planeBreak2, temp2, cDestroy);
+    falldown4point(planeBreak3, temp3, cDestroy);
+}
+
+void printSquare (int edge, int loc_x, int loc_y, Color C) {
+    long int location;
+    int i,j;
+    if (((loc_x)>=0) && ((loc_x + edge)<vinfo.xres) && ((loc_y)>=0) && ((loc_y + edge)<vinfo.yres)) {
+		for (i = loc_x; i < (loc_x+edge); i++) {
+			for (j = loc_y; j < (loc_y+edge); j++) {
+				location = (i+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (j+vinfo.yoffset) * finfo.line_length;
+				
+				if (fbp + location) { //check for segmentation fault
+					if (vinfo.bits_per_pixel == 32) {
+						*(fbp + location) = C.a;            //Blue
+						*(fbp + location + 1) = C.r;        //Green
+						*(fbp + location + 2) = C.g;        //Red
+						*(fbp + location + 3) = C.b;          //Transparancy
+					} else  { //assume 16bpp
+						int r = C.a;     //Red
+						int g = C.r;     //Green
+						int b = C.g;     //Blue
+						
+						unsigned short int t = r<<11 | g << 5 | b;
+						*((unsigned short int*)(fbp + location)) = t;
+					}
+				} else {
+					return;
+				}
+			}
+		}
+	}
+}
+
+void plot8pixel (Point P, int p, int q, int W, Color C) {
+    printSquare(W, P.x+p, P.y+q, C);
+    printSquare(W, P.x-p, P.y+q, C);
+    printSquare(W, P.x+p, P.y-q, C);
+    printSquare(W, P.x-p, P.y-q, C);
+
+    printSquare(W, P.x+q, P.y+p, C);
+    printSquare(W, P.x-q, P.y+p, C);
+    printSquare(W, P.x+q, P.y-p, C);
+    printSquare(W, P.x-q, P.y-p, C);
+}
+
+void drawCircle (int radius, Point P, int W, Color C) {
+    int d, p, q;
+
+    p = 0;
+    q = radius;
+    d = 3 - 2*radius;
+
+    plot8pixel(P, p, q, W, C);
+
+    while (p < q) {
+        p++;
+        if (d<0) {
+            d = d + 4*p + 6;
+        }
+        else {
+            q--;
+            d = d + 4*(p-q) + 10;
+        }
+
+        plot8pixel(P, p, q, W, C);
+    }
+}
 
 void* drawPlane() {
-    Color c, cDestroy;
+	Color cDestroy;
+	setColor(&cDestroy, 255, 255, 255);
+	int i;
+	Point* planeBreak1;
+	Point* planeBreak2;
+	Point* planeBreak3;
+	Point temp, temp1;
+	Point circle, circle1;
+	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
+    Color c, cDel;
     setColor(&c, 255, 0, 0);
-    setColor(&cDestroy, 255, 255, 0);
-    Point* plane; // kumpulan titik yang membentuk gambar pesawat
-    Point temp;
+    Point* plane;
     plane = (Point*) malloc(6 * sizeof(Point));
     int lengthPlane = 260; // panjang pesawat dari head sampai tail
     tailPlane = vinfo.xres;
     headPlane = tailPlane - lengthPlane;
+   
     int j;
 
     while (!kaboom) { // selama pesawat belum ketembak
         while (headPlane > 0) { // selama pesawat belum mentok di kiri
             if (kaboom) { // pesawat kena tembak
-                //Hapus warna pesawat
-                /*setPoint(&temp, plane[1].x, 60);
-                solidFill(temp, bg);
-                setPoint(&temp, plane[3].x, 30);
-                solidFill(temp, bg);*/
+            	clearScreen(&bg);
+            	drawBoxgun();
                 //Buat poligon tertembak
-
-                setPoint(&plane[0], headPlane, 90);
-                setPoint(&plane[1], headPlane + 60, 20);
-                setPoint(&plane[2], headPlane + 160, 30);
-                setPoint(&plane[3], headPlane + 260, 100);
-                setPoint(&plane[4], headPlane + 150, 130);
-                setPoint(&plane[5], headPlane + 20, 100);
-                // gambar pesawat meledak
-                for(j = 0; j < 5; j++) {
-                    drawLine(&plane[j], &plane[j + 1], &cDestroy);
-                }
-                drawLine(&plane[5], &plane[0], &cDestroy);
-                //Warnai
-                setPoint(&temp, plane[2].x, 50);
-                solidFill(&temp, cDestroy);
+                drawPlaneBreak(plane);
+                sleep(2);
                 break;
             } else { // masih terbang
+            	// hapus
+            	circle.x = headPlane+40;
+				circle.y = 90;
+				circle1.x = headPlane+140;
+				circle1.y = 90;
+                for(j = 0; j < 5; j++) {
+                    drawLine(&plane[j], &plane[j + 1], &bg);
+                }
+               // drawCircle(12, circle, 2, bg);
+                drawLine(&plane[5], &plane[0], &bg);
+                
                 setPoint(&plane[0], headPlane, 90);
                 setPoint(&plane[1], headPlane + 40, 50);
                 setPoint(&plane[2], headPlane + 190, 50);
@@ -254,22 +431,31 @@ void* drawPlane() {
                 setPoint(&plane[4], headPlane + 260, 20);
                 setPoint(&plane[5], headPlane + 190, 90);
                 // gambar
+                
                 for(j = 0; j < 5; j++) {
                     drawLine(&plane[j], &plane[j + 1], &c);
+                    
                 }
+                drawCircle(12, circle, 2, c);
+                drawCircle(13, circle, 2, bg);
+                drawCircle(12, circle1, 2, c);
+                drawCircle(13, circle1, 2, bg);
                 drawLine(&plane[5], &plane[0], &c);
+                
+				//circle.x = 90 + 260;
+				//circle.y = 100 + 3;
+				
                 // Warnai
                 setPoint(&temp, plane[1].x, 60);
                 solidFill(&temp, c);
                 setPoint(&temp, plane[3].x, 30);
                 solidFill(&temp, c);
-                usleep(500);
+                /*setPoint(&temp1, headPlane, 90);
+                solidFill(&temp1, bg);
+                setPoint(&temp1, headPlane+12, 90);
+                solidFill(&temp1, bg); */
+                usleep(5000);
 
-                // hapus
-                for(j = 0; j < 5; j++) {
-                    drawLine(&plane[j], &plane[j + 1], &bg);
-                }
-                drawLine(&plane[5], &plane[0], &bg);
                 headPlane--;
                 tailPlane--;
             }
@@ -288,13 +474,11 @@ void* drawPlane() {
     }
 }
 
-void* drawLasergun() {
-	Point bottomGun, mouthGun;
-    Point* box;
+void drawBoxgun() {
+	Point* box;
     Point boxFirePoint;
     box = (Point*) malloc(4*sizeof(Point));
     int i;
-    Color c; setColor(&c, 0, 255, 255);
     Color cBox; setColor(&cBox, 0, 255, 0);
     //Membuat kotak tembak
     setPoint(&box[0], vinfo.xres/2 - 40, vinfo.yres -1);
@@ -307,7 +491,13 @@ void* drawLasergun() {
     drawLine(&box[0], &box[i], &cBox);
     setPoint(&boxFirePoint, vinfo.xres/2, vinfo.yres - 20);
     solidFill(&boxFirePoint, cBox);
+}
 
+void* drawLasergun() {
+	Point bottomGun, mouthGun;
+	Color c; setColor(&c, 0, 255, 255);
+    int i;
+    drawBoxgun();
     setPoint(&bottomGun, vinfo.xres / 2, vinfo.yres - 40); // berada di tengah bawah
     int moveLeft = 1; // moveLeft = 1 berarti arah mulut geser ke kiri
     int lengthGun = 100; // panjang dari bawah sampe atas
