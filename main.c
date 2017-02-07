@@ -331,28 +331,87 @@ void* drawLasergun() {
             }
         }
         srcXBeam = (destXBeam * lengthGun + constB - constA) / vinfo.yres;
+        
+        //Gambar senjata
         setPoint(&mouthGun, srcXBeam, srcYBeam);
-        // gambar
-        drawLine(&bottomGun, &mouthGun, &c);
+        setPoint(&box[0], srcXBeam - 4, srcYBeam);
+		setPoint(&box[1], srcXBeam + 4, srcYBeam);
+		setPoint(&box[2], vinfo.xres / 2  + 4, vinfo.yres -40);
+		setPoint(&box[3], vinfo.xres/2 - 4, vinfo.yres -40);
+		for(i = 0; i < 3; i++) {
+			drawLine(&box[i], &box[i + 1], &cBox);
+		}
+		drawLine(&box[0], &box[i], &cBox);
+		setPoint(&boxFirePoint, (vinfo.xres/2+ srcXBeam)/2, (srcYBeam+vinfo.yres-40)/2);
+		solidFill(&boxFirePoint, cBox);
         usleep(2000);
         // hapus
-        drawLine(&bottomGun, &mouthGun, &bg);
+        for(i = 0; i < 3; i++) {
+			drawLine(&box[i], &box[i + 1], &bg);
+		}
+		drawLine(&box[0], &box[i], &bg);
+		solidFill(&boxFirePoint, bg);
     }
 }
 
+
+int getAbsisInlineEquation(Point p1, Point p2, int ordinat) {
+
+	float temp, x;
+	x =  (float) (ordinat-p1.y);
+	x = (ordinat-p1.y)/ (float) (p2.y-p1.y);
+	temp = ((x)*(p2.x-p1.x)+p1.x);
+	return (int) temp;
+}
+
 void* drawBeam() {
-	Point srcBeam, destBeam;
+	Point srcBeam, destBeam, backOfBullet, fixSrcBeam, boxFirePoint;
+	int tempXBeam, tempYBeam, tempDXBeam,i;
     Color c; setColor(&c, 255, 0, 255);
     char stroke;
+    Point* box;
+    box = (Point*) malloc(4*sizeof(Point));
     while(!kaboom) {
         stroke = fgetc(stdin);
         if (stroke == 10) { // ENTER
-            setPoint(&srcBeam, srcXBeam, srcYBeam);
-            setPoint(&destBeam, destXBeam, 0);
-            // gambar
-            
-            drawLine(&srcBeam, &destBeam, &c);
-            if (destXBeam > headPlane && destXBeam < tailPlane) { // kena
+			tempXBeam = srcXBeam;
+			tempYBeam = srcYBeam;
+            setPoint(&fixSrcBeam, srcXBeam, srcYBeam);
+            setPoint(&destBeam, vinfo.xres / 2, vinfo.yres -40);
+            tempDXBeam = getAbsisInlineEquation(fixSrcBeam,destBeam, 0);
+            setPoint(&destBeam, tempDXBeam, 0);            
+            while (tempYBeam > 100) {
+				setPoint(&backOfBullet, tempXBeam, tempYBeam);
+				tempYBeam -= 5;
+				tempXBeam = getAbsisInlineEquation(fixSrcBeam, destBeam,tempYBeam);
+				setPoint(&srcBeam, tempXBeam, tempYBeam);
+				if (srcBeam.x > backOfBullet.x) {
+					setPoint(&box[0], backOfBullet.x, srcBeam.y);
+					setPoint(&box[1], srcBeam.x, srcBeam.y);
+					setPoint(&box[2], srcBeam.x,backOfBullet.y);
+					setPoint(&box[3], backOfBullet.x, backOfBullet.y);
+				} else {
+					setPoint(&box[0], srcBeam.x, srcBeam.y);
+					setPoint(&box[1], backOfBullet.x, srcBeam.y);
+					setPoint(&box[2], backOfBullet.x,backOfBullet.y);
+					setPoint(&box[3], srcBeam.x, backOfBullet.y);
+				}
+				
+				setPoint(&boxFirePoint, (srcBeam.x+backOfBullet.x)/2, (srcBeam.y+backOfBullet.y)/2);
+				
+				for(i = 0; i < 3; i++) {
+					drawLine(&box[i], &box[i + 1], &c);
+				}
+				drawLine(&box[0], &box[i], &c);
+				//solidFill(&boxFirePoint, c);
+				usleep(20000);
+				for(i = 0; i < 3; i++) {
+					drawLine(&box[i], &box[i + 1], &bg);
+				}
+				drawLine(&box[0], &box[i], &bg);
+				//solidFill(&boxFirePoint, bg);
+			}
+            if ((destBeam.x > headPlane+20) && (destBeam.x < tailPlane+20)) { // kena
                 kaboom = 1;
             } else {
             	// hapus
