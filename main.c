@@ -316,6 +316,71 @@ void drawPlaneBreak(Point* plane) {
     falldown4point(planeBreak3, temp3, cDestroy);
 }
 
+void printSquare (int edge, int loc_x, int loc_y, Color C) {
+    long int location;
+    int i,j;
+    if (((loc_x)>=0) && ((loc_x + edge)<vinfo.xres) && ((loc_y)>=0) && ((loc_y + edge)<vinfo.yres)) {
+		for (i = loc_x; i < (loc_x+edge); i++) {
+			for (j = loc_y; j < (loc_y+edge); j++) {
+				location = (i+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (j+vinfo.yoffset) * finfo.line_length;
+				
+				if (fbp + location) { //check for segmentation fault
+					if (vinfo.bits_per_pixel == 32) {
+						*(fbp + location) = C.a;            //Blue
+						*(fbp + location + 1) = C.r;        //Green
+						*(fbp + location + 2) = C.g;        //Red
+						*(fbp + location + 3) = C.b;          //Transparancy
+					} else  { //assume 16bpp
+						int r = C.a;     //Red
+						int g = C.r;     //Green
+						int b = C.g;     //Blue
+						
+						unsigned short int t = r<<11 | g << 5 | b;
+						*((unsigned short int*)(fbp + location)) = t;
+					}
+				} else {
+					return;
+				}
+			}
+		}
+	}
+}
+
+void plot8pixel (Point P, int p, int q, int W, Color C) {
+    printSquare(W, P.x+p, P.y+q, C);
+    printSquare(W, P.x-p, P.y+q, C);
+    printSquare(W, P.x+p, P.y-q, C);
+    printSquare(W, P.x-p, P.y-q, C);
+
+    printSquare(W, P.x+q, P.y+p, C);
+    printSquare(W, P.x-q, P.y+p, C);
+    printSquare(W, P.x+q, P.y-p, C);
+    printSquare(W, P.x-q, P.y-p, C);
+}
+
+void drawCircle (int radius, Point P, int W, Color C) {
+    int d, p, q;
+
+    p = 0;
+    q = radius;
+    d = 3 - 2*radius;
+
+    plot8pixel(P, p, q, W, C);
+
+    while (p < q) {
+        p++;
+        if (d<0) {
+            d = d + 4*p + 6;
+        }
+        else {
+            q--;
+            d = d + 4*(p-q) + 10;
+        }
+
+        plot8pixel(P, p, q, W, C);
+    }
+}
+
 void* drawPlane() {
 	Color cDestroy;
 	setColor(&cDestroy, 255, 255, 255);
@@ -323,7 +388,8 @@ void* drawPlane() {
 	Point* planeBreak1;
 	Point* planeBreak2;
 	Point* planeBreak3;
-	Point temp;
+	Point temp, temp1;
+	Point circle, circle1;
 	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
 	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
 	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
@@ -334,6 +400,7 @@ void* drawPlane() {
     int lengthPlane = 260; // panjang pesawat dari head sampai tail
     tailPlane = vinfo.xres;
     headPlane = tailPlane - lengthPlane;
+   
     int j;
 
     while (!kaboom) { // selama pesawat belum ketembak
@@ -347,9 +414,14 @@ void* drawPlane() {
                 break;
             } else { // masih terbang
             	// hapus
+            	circle.x = headPlane+40;
+				circle.y = 90;
+				circle1.x = headPlane+140;
+				circle1.y = 90;
                 for(j = 0; j < 5; j++) {
                     drawLine(&plane[j], &plane[j + 1], &bg);
                 }
+               // drawCircle(12, circle, 2, bg);
                 drawLine(&plane[5], &plane[0], &bg);
                 
                 setPoint(&plane[0], headPlane, 90);
@@ -359,16 +431,30 @@ void* drawPlane() {
                 setPoint(&plane[4], headPlane + 260, 20);
                 setPoint(&plane[5], headPlane + 190, 90);
                 // gambar
+                
                 for(j = 0; j < 5; j++) {
                     drawLine(&plane[j], &plane[j + 1], &c);
+                    
                 }
+                drawCircle(12, circle, 2, c);
+                drawCircle(13, circle, 2, bg);
+                drawCircle(12, circle1, 2, c);
+                drawCircle(13, circle1, 2, bg);
                 drawLine(&plane[5], &plane[0], &c);
+                
+				//circle.x = 90 + 260;
+				//circle.y = 100 + 3;
+				
                 // Warnai
                 setPoint(&temp, plane[1].x, 60);
                 solidFill(&temp, c);
                 setPoint(&temp, plane[3].x, 30);
                 solidFill(&temp, c);
-                usleep(500);
+                /*setPoint(&temp1, headPlane, 90);
+                solidFill(&temp1, bg);
+                setPoint(&temp1, headPlane+12, 90);
+                solidFill(&temp1, bg); */
+                usleep(5000);
 
                 headPlane--;
                 tailPlane--;
