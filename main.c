@@ -214,7 +214,7 @@ void falldown4point(Point* p, Point firepoint, Color c) {
 	int minX = p[0].x;
 	int maxX = p[0].x;
 
-	//cari titik terbawah
+	//cari titik terbawah dan teratas
 	for (i=1; i<4; i++) {
 		if (p[i].y>minY)
 			minY = p[i].y;
@@ -256,7 +256,7 @@ void falldown4point(Point* p, Point firepoint, Color c) {
 	    //warnai ulang
 	    setPoint(&firepoint, firepoint.x, firepoint.y+1);
 	    solidFill(&firepoint, c);
-	    usleep(500);
+	    minY++;
 	}
 }
 void drawPlaneBreak(Point* plane) {
@@ -281,7 +281,7 @@ void drawPlaneBreak(Point* plane) {
     }
     drawLine(&planeBreak1[3], &planeBreak1[0], &cDestroy);
     //Warnai
-    setPoint(&temp1, planeBreak1[1].x, planeBreak1[1].y+10);
+    setPoint(&temp1, planeBreak1[1].x, planeBreak1[1].y+20);
     solidFill(&temp1, cDestroy);
 
 	//Buat bagian plane 2
@@ -294,7 +294,7 @@ void drawPlaneBreak(Point* plane) {
     }
     drawLine(&planeBreak2[3], &planeBreak2[0], &cDestroy);
     //Warnai
-    setPoint(&temp2, planeBreak2[0].x+10, planeBreak2[0].y+10);
+    setPoint(&temp2, planeBreak2[0].x+10, planeBreak2[0].y+20);
     solidFill(&temp2, cDestroy);
 
     //Buat bagian plane 3
