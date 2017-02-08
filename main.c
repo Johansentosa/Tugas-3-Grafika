@@ -494,8 +494,10 @@ void drawBoxgun() {
 }
 
 void* drawLasergun() {
-	Point bottomGun, mouthGun;
+	Point bottomGun, mouthGun, boxFirePoint;
 	Color c; setColor(&c, 0, 255, 255);
+	Color cBox; setColor(&cBox, 0, 255, 0);
+	Point* box = (Point*) malloc(4*sizeof(Point));
     int i;
     drawBoxgun();
     setPoint(&bottomGun, vinfo.xres / 2, vinfo.yres - 40); // berada di tengah bawah
