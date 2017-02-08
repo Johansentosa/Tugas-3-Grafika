@@ -155,6 +155,8 @@ void drawLine(Point* p1, Point* p2, Color* c) {
     }
 }
 
+
+
 void solidFill(Point* firepoint, Color c){
     Point newfp;
     
@@ -205,6 +207,7 @@ void solidFill(Point* firepoint, Color c){
         }
     }
 }
+
 
 void* drawPlane() {
     Color c, cDestroy;
@@ -347,6 +350,7 @@ void* drawBeam() {
             setPoint(&srcBeam, srcXBeam, srcYBeam);
             setPoint(&destBeam, destXBeam, 0);
             // gambar
+            
             drawLine(&srcBeam, &destBeam, &c);
             if (destXBeam > headPlane && destXBeam < tailPlane) { // kena
                 kaboom = 1;
