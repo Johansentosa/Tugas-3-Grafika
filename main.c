@@ -320,30 +320,30 @@ void printSquare (int edge, int loc_x, int loc_y, Color C) {
     long int location;
     int i,j;
     if (((loc_x)>=0) && ((loc_x + edge)<vinfo.xres) && ((loc_y)>=0) && ((loc_y + edge)<vinfo.yres)) {
-		for (i = loc_x; i < (loc_x+edge); i++) {
-			for (j = loc_y; j < (loc_y+edge); j++) {
-				location = (i+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (j+vinfo.yoffset) * finfo.line_length;
-				
-				if (fbp + location) { //check for segmentation fault
-					if (vinfo.bits_per_pixel == 32) {
-						*(fbp + location) = C.a;            //Blue
-						*(fbp + location + 1) = C.r;        //Green
-						*(fbp + location + 2) = C.g;        //Red
-						*(fbp + location + 3) = C.b;          //Transparancy
-					} else  { //assume 16bpp
-						int r = C.a;     //Red
-						int g = C.r;     //Green
-						int b = C.g;     //Blue
-						
-						unsigned short int t = r<<11 | g << 5 | b;
-						*((unsigned short int*)(fbp + location)) = t;
-					}
-				} else {
-					return;
-				}
-			}
-		}
-	}
+        for (i = loc_x; i < (loc_x+edge); i++) {
+            for (j = loc_y; j < (loc_y+edge); j++) {
+                location = (i+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (j+vinfo.yoffset) * finfo.line_length;
+                
+                if (fbp + location) { //check for segmentation fault
+                    if (vinfo.bits_per_pixel == 32) {
+                        *(fbp + location) = C.a;            //Blue
+                        *(fbp + location + 1) = C.r;        //Green
+                        *(fbp + location + 2) = C.g;        //Red
+                        *(fbp + location + 3) = C.b;          //Transparancy
+                    } else  { //assume 16bpp
+                        int r = C.a;     //Red
+                        int g = C.r;     //Green
+                        int b = C.g;     //Blue
+                        
+                        unsigned short int t = r<<11 | g << 5 | b;
+                        *((unsigned short int*)(fbp + location)) = t;
+                    }
+                } else {
+                    return;
+                }
+            }
+        }
+    }
 }
 
 void plot8pixel (Point P, int p, int q, int W, Color C) {
@@ -383,16 +383,16 @@ void drawCircle (int radius, Point P, int W, Color C) {
 
 void* drawPlane() {
 	Color cDestroy;
-	setColor(&cDestroy, 255, 255, 255);
-	int i;
-	Point* planeBreak1;
-	Point* planeBreak2;
-	Point* planeBreak3;
-	Point temp, temp1;
-	Point circle, circle1;
-	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
-	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
-	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
+    setColor(&cDestroy, 255, 255, 255);
+    int i;
+    Point* planeBreak1;
+    Point* planeBreak2;
+    Point* planeBreak3;
+    Point temp, temp1;
+    Point circle, circle1;
+    planeBreak1 = (Point*) malloc (4 * sizeof(Point));
+    planeBreak2 = (Point*) malloc (4 * sizeof(Point));
+    planeBreak3 = (Point*) malloc (4 * sizeof(Point));
     Color c, cDel;
     setColor(&c, 255, 0, 0);
     Point* plane;
@@ -406,18 +406,18 @@ void* drawPlane() {
     while (!kaboom) { // selama pesawat belum ketembak
         while (headPlane > 0) { // selama pesawat belum mentok di kiri
             if (kaboom) { // pesawat kena tembak
-            	clearScreen(&bg);
-            	drawBoxgun();
+                clearScreen(&bg);
+                drawBoxgun();
                 //Buat poligon tertembak
                 drawPlaneBreak(plane);
                 sleep(2);
                 break;
             } else { // masih terbang
-            	// hapus
-            	circle.x = headPlane+40;
-				circle.y = 90;
-				circle1.x = headPlane+140;
-				circle1.y = 90;
+                // hapus
+                circle.x = headPlane+40;
+                circle.y = 90;
+                circle1.x = headPlane+140;
+                circle1.y = 90;
                 for(j = 0; j < 5; j++) {
                     drawLine(&plane[j], &plane[j + 1], &bg);
                 }
@@ -442,9 +442,9 @@ void* drawPlane() {
                 drawCircle(13, circle1, 2, bg);
                 drawLine(&plane[5], &plane[0], &c);
                 
-				//circle.x = 90 + 260;
-				//circle.y = 100 + 3;
-				
+                //circle.x = 90 + 260;
+                //circle.y = 100 + 3;
+                
                 // Warnai
                 setPoint(&temp, plane[1].x, 60);
                 solidFill(&temp, c);
@@ -461,14 +461,14 @@ void* drawPlane() {
             }
         }
         for(int x=0; x<vinfo.xres; x++){
-			for(int y=0; y<vinfo.yres/3; y++){
-				long location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
-				*(fbp + location) =0;
-				*(fbp + location +1) = 0;
-				*(fbp + location +2) = 0;
-				*(fbp + location + 3) = 0;
-			}
-		}
+            for(int y=0; y<vinfo.yres/3; y++){
+                long location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
+                *(fbp + location) =0;
+                *(fbp + location +1) = 0;
+                *(fbp + location +2) = 0;
+                *(fbp + location + 3) = 0;
+            }
+        }
         tailPlane = vinfo.xres; // restart dari ujung kanan lagi
         headPlane = tailPlane - lengthPlane;
     }
@@ -494,10 +494,8 @@ void drawBoxgun() {
 }
 
 void* drawLasergun() {
-	Point bottomGun, mouthGun, boxFirePoint;
-	Color c; setColor(&c, 0, 255, 255);
-	Color cBox; setColor(&cBox, 0, 255, 0);
-	Point* box = (Point*) malloc(4*sizeof(Point));
+    Point bottomGun, mouthGun;
+    Color c; setColor(&c, 0, 255, 255);
     int i;
     drawBoxgun();
     setPoint(&bottomGun, vinfo.xres / 2, vinfo.yres - 40); // berada di tengah bawah
@@ -523,26 +521,12 @@ void* drawLasergun() {
             }
         }
         srcXBeam = (destXBeam * lengthGun + constB - constA) / vinfo.yres;
-        
-        //Gambar senjata
         setPoint(&mouthGun, srcXBeam, srcYBeam);
-        setPoint(&box[0], srcXBeam - 4, srcYBeam);
-		setPoint(&box[1], srcXBeam + 4, srcYBeam);
-		setPoint(&box[2], vinfo.xres / 2  + 4, vinfo.yres -40);
-		setPoint(&box[3], vinfo.xres/2 - 4, vinfo.yres -40);
-		for(i = 0; i < 3; i++) {
-			drawLine(&box[i], &box[i + 1], &cBox);
-		}
-		drawLine(&box[0], &box[i], &cBox);
-		setPoint(&boxFirePoint, (vinfo.xres/2+ srcXBeam)/2, (srcYBeam+vinfo.yres-40)/2);
-		solidFill(&boxFirePoint, cBox);
+        // gambar
+        drawLine(&bottomGun, &mouthGun, &c);
         usleep(2000);
         // hapus
-        for(i = 0; i < 3; i++) {
-			drawLine(&box[i], &box[i + 1], &bg);
-		}
-		drawLine(&box[0], &box[i], &bg);
-		solidFill(&boxFirePoint, bg);
+        drawLine(&bottomGun, &mouthGun, &bg);
     }
 }
 
@@ -613,6 +597,7 @@ void* drawBeam() {
         }
     }
 }
+
 
 void connectBuffer() {
     // Open the file for reading and writing
