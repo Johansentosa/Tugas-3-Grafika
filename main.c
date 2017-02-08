@@ -407,7 +407,7 @@ void* drawPlane() {
         while (headPlane > 0) { // selama pesawat belum mentok di kiri
             if (kaboom) { // pesawat kena tembak
             	clearScreen(&bg);
-            	drawBoxgun();
+            	//drawBoxgun();
                 //Buat poligon tertembak
                 drawPlaneBreak(plane);
                 sleep(2);
@@ -509,7 +509,7 @@ void* drawLasergun() {
     // konstanta-konstanta untuk menghitung srcXBeam, didapat dari penurunan rumus
     int constA = vinfo.xres * lengthGun / 2;
     int constB = vinfo.xres * vinfo.yres / 2;
-    while (1) { // berhenti hanya jika di interrupt master
+    while (!kaboom) { // berhenti hanya jika di interrupt master
         // penembak ganti arah bolak balik kiri kanan
         if (moveLeft) {
             destXBeam--;
@@ -604,6 +604,7 @@ void* drawBeam() {
 				//solidFill(&boxFirePoint, bg);
 			}
             if ((destBeam.x > headPlane+20) && (destBeam.x < tailPlane+20)) { // kena
+                //drawPlane();
                 kaboom = 1;
             } else {
             	// hapus
