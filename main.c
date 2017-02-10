@@ -159,7 +159,6 @@ void drawLine(Point* p1, Point* p2, Color* c) {
 
 void solidFill(Point* firepoint, Color c){
     Point newfp;
-    
     if(firepoint->x>1 && firepoint->x<vinfo.xres-1 && firepoint->y>1 && firepoint->y<vinfo.yres-1){
         newfp.x = firepoint->x+1;
         newfp.y = firepoint->y;
@@ -207,6 +206,7 @@ void solidFill(Point* firepoint, Color c){
         }
     }
 }
+
 
 void falldown4point(Point* p, Point firepoint, Color c) {
 	int i, j;
@@ -471,6 +471,7 @@ void* drawPlane() {
 		}
         tailPlane = vinfo.xres; // restart dari ujung kanan lagi
         headPlane = tailPlane - lengthPlane;
+        //tes
     }
 }
 
