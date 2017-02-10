@@ -58,14 +58,14 @@ void changeARGB(int location, Color* c) {
 
 void clearScreen(Color* c) {
     int i, j;
-    int location = 0;
     // iterasi pixel setiap baris dan setiap kolom
     for (j = 0; j < vinfo.yres; j++) {
         for (i = 0; i < vinfo.xres; i++) {
+			long location = (i+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (j+vinfo.yoffset) * finfo.line_length;
             changeARGB(location, c);
-            location += bytePerPixel; // pixel sebelah kanannya berjarak sekian byte
+            //location += bytePerPixel; // pixel sebelah kanannya berjarak sekian byte
         }
-        location += (bytePerPixel * overPixel); // pixel pertama pada baris selanjutnya berjarak sekian byte
+        //location += (bytePerPixel * overPixel); // pixel pertama pada baris selanjutnya berjarak sekian byte
     }
 }
 
