@@ -12,10 +12,10 @@ typedef struct Points {
     int y;
 } Point;
 typedef struct Colors {
-    char a;
-    char r;
-    char g;
-    char b;
+    int a;
+    int r;
+    int g;
+    int b;
 } Color;
 struct fb_var_screeninfo vinfo;
 struct fb_fix_screeninfo finfo;
@@ -207,6 +207,55 @@ void solidFill(Point* firepoint, Color c){
     }
 }
 
+void solidFillReverse(Point* firepoint, Color c){
+    Point newfp;
+    if(firepoint->x>1 && firepoint->x<vinfo.xres-1 && firepoint->y>1 && firepoint->y<vinfo.yres-1){
+        newfp.x = firepoint->x+1;
+        newfp.y = firepoint->y;
+        long location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==c.a && *(fbp + location +1)==c.r && *(fbp + location +2) ==c.g){
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = c.b;
+            solidFillReverse(&newfp, c);
+        }
+        
+        newfp.x = firepoint->x-1;
+        newfp.y = firepoint->y;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==c.a && *(fbp + location +1)==c.r && *(fbp + location +2) ==c.g){
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = c.b;
+            solidFillReverse(&newfp, c);
+        }
+        
+        newfp.x = firepoint->x;
+        newfp.y = firepoint->y+1;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==c.a && *(fbp + location +1)==c.r && *(fbp + location +2) ==c.g){
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = c.b;
+            solidFillReverse(&newfp, c);
+        }
+        
+        newfp.x = firepoint->x;
+        newfp.y = firepoint->y-1;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==c.a && *(fbp + location +1)==c.r && *(fbp + location +2) ==c.g){
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = c.b;
+            solidFillReverse(&newfp, c);
+        }
+    }
+}
+
 
 void falldown4point(Point* p, Point firepoint, Color c) {
 	int i, j;
@@ -257,6 +306,7 @@ void falldown4point(Point* p, Point firepoint, Color c) {
 	    setPoint(&firepoint, firepoint.x, firepoint.y+1);
 	    solidFill(&firepoint, c);
 	    minY++;
+	    usleep(5000);
 	}
 }
 void drawPlaneBreak(Point* plane) {
@@ -388,7 +438,7 @@ void* drawPlane() {
 	Point* planeBreak1;
 	Point* planeBreak2;
 	Point* planeBreak3;
-	Point temp, temp1;
+	Point temp, temp1, temp2;
 	Point circle, circle1;
 	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
 	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
@@ -446,15 +496,14 @@ void* drawPlane() {
 				//circle.y = 100 + 3;
 				
                 // Warnai
-                setPoint(&temp, plane[1].x, 60);
-                solidFill(&temp, c);
+                setPoint(&temp2, plane[1].x, 60);
+                solidFill(&temp2, c);
                 setPoint(&temp, plane[3].x, 30);
                 solidFill(&temp, c);
-                /*setPoint(&temp1, headPlane, 90);
-                solidFill(&temp1, bg);
-                setPoint(&temp1, headPlane+12, 90);
-                solidFill(&temp1, bg); */
-                usleep(5000);
+                //maenin usleepnya aja, 50000 lmyn ga kedip tp lama -abe1.0
+                usleep(20000);
+                solidFillReverse(&temp, c);
+                solidFillReverse(&temp2, c);
 
                 headPlane--;
                 tailPlane--;
