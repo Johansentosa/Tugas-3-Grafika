@@ -7,6 +7,7 @@
 #include <sys/ioctl.h>
 #include <pthread.h>
 #include <math.h>
+#include "event.c"
 
 typedef struct Points {
     int x;
@@ -735,8 +736,10 @@ void* drawBeam() {
     Point* box;
     box = (Point*) malloc(4*sizeof(Point));
     while(!kaboom) {
-        stroke = fgetc(stdin);
-        if (stroke == 10) { // ENTER
+        // stroke = fgetc(stdin);
+        stroke = getch();
+
+        if (stroke == ' ') { // spasi
 			tempXBeam = srcXBeam;
 			tempYBeam = srcYBeam;
             setPoint(&fixSrcBeam, srcXBeam, srcYBeam);
