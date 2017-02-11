@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
+#include <math.h>
 
 typedef struct Points {
     int x;
@@ -24,6 +25,13 @@ struct readFallDownParams {
 	Point* p;
 	Point firepoint;
 	Color c;
+};
+
+struct readFallSpinParams {
+	Point* p;
+	Point firepoint;
+	Color c;
+	Point pivot;
 };
 
 Color bg; // warna background
@@ -164,7 +172,7 @@ void drawLine(Point* p1, Point* p2, Color* c) {
 
 
 void solidFill(Point* firepoint, Color c){
-    Point newfp;
+    /*Point newfp;
     if(firepoint->x>1 && firepoint->x<vinfo.xres-1 && firepoint->y>1 && firepoint->y<vinfo.yres-1){
         newfp.x = firepoint->x+1;
         newfp.y = firepoint->y;
@@ -210,7 +218,8 @@ void solidFill(Point* firepoint, Color c){
             *(fbp + location + 3) = c.b;
             solidFill(&newfp, c);
         }
-    }
+    }*/
+
 }
 
 void solidFillReverse(Point* firepoint, Color c){
@@ -316,6 +325,87 @@ void* falldown4point(void* params) {
 	    usleep(5000);
 	}
 }
+
+Point spinDegree(Point p, int degree) {
+	int i;
+	Point pTemp;
+	double PI = 3.14159265;
+	double degInRad = degree*PI/180;
+	pTemp.x = p.x*cos(degInRad)-p.y*sin(degInRad);
+	pTemp.y = p.x*sin(degInRad)+p.y*cos(degInRad);
+	return pTemp;
+}
+void* fallSpin(void *params) {
+	//Thread procedure untuk menjatuhkan sambil memutaint i, j;
+	int i;
+	Point pTemp;
+	struct readFallSpinParams *readparams = params;
+	int minY = readparams->p[0].y;
+	int minX = readparams->p[0].x;
+	int maxX = readparams->p[0].x;
+
+	//cari titik terbawah dan teratas
+	for (i=1; i<4; i++) {
+		if (readparams->p[i].y>minY)
+			minY = readparams->p[i].y;
+	}
+
+	//cari titik terkiri dan terkanan
+	for (i=1; i<4; i++) {
+		if (readparams->p[i].x > maxX)
+			maxX = readparams->p[i].x;
+		if (readparams->p[i].x < minX)
+			minX = readparams->p[i].x;
+	}
+
+	while (minY < vinfo.yres-40) {
+		//hapus
+		for (i=0; i<3; i++) {
+			drawLine(&readparams->p[i], &readparams->p[i + 1], &bg);
+	    }
+	    drawLine(&readparams->p[3], &readparams->p[0], &bg);
+
+	    for(int x=minX; x<=maxX; x++){
+			for(int y=0; y<minY; y++){
+				long location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
+				*(fbp + location) =0;
+				*(fbp + location +1) = 0;
+				*(fbp + location +2) = 0;
+				*(fbp + location + 3) = 0;
+			}
+		}
+
+	    //gambar ulang dengan memutar
+	    //kembalikan ke titik 0
+	    for (i=0; i<4; i++) {
+			setPoint(&readparams->p[i], readparams->p[i].x-readparams->pivot.x, readparams->p[i].y-readparams->pivot.y);
+		}
+
+		//putar 45 derajat dan turunkan sekian piksel
+		for (i=0; i<4; i++) {
+			pTemp = spinDegree(readparams->p[i], 45);
+			setPoint(&readparams->p[i], pTemp.x, pTemp.y+30);
+		}
+		//putar firepoint dan turunkan sekian piksel
+		pTemp = spinDegree(readparams->firepoint, 45);
+		setPoint(&readparams->firepoint, pTemp.x, pTemp.y+30);
+
+		//kembalikan ke titik asal dan turunkan satu piksel
+		for (i=0; i<4; i++) {
+			setPoint(&readparams->p[i], readparams->p[i].x+readparams->pivot.x, readparams->p[i].y+readparams->pivot.y+30);
+		}
+
+		for (i=0; i<3; i++) {
+			drawLine(&readparams->p[i], &readparams->p[i + 1], &readparams->c);
+	    }
+	    drawLine(&readparams->p[3], &readparams->p[0], &readparams->c);
+	    //warnai ulang
+	    setPoint(&readparams->firepoint, readparams->firepoint.x, readparams->firepoint.y+30);
+	    solidFill(&readparams->firepoint,  readparams->c);
+	    minY++;
+	    sleep(1);
+	}
+}
 void drawPlaneBreak(Point* plane) {
 	Color cDestroy;
 	setColor(&cDestroy, 255, 255, 255);
@@ -323,7 +413,8 @@ void drawPlaneBreak(Point* plane) {
 	Point* planeBreak1;
 	Point* planeBreak2;
 	Point* planeBreak3;
-	Point temp1, temp2, temp3;
+	Point firepoint1, firepoint2, firepoint3;
+	Point pivot1, pivot2, pivot3;
 	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
 	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
 	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
@@ -338,8 +429,8 @@ void drawPlaneBreak(Point* plane) {
     }
     drawLine(&planeBreak1[3], &planeBreak1[0], &cDestroy);
     //Warnai
-    setPoint(&temp1, planeBreak1[1].x, planeBreak1[1].y+20);
-    solidFill(&temp1, cDestroy);
+    setPoint(&firepoint1, planeBreak1[1].x, planeBreak1[1].y+20);
+    solidFill(&firepoint1, cDestroy);
 
 	//Buat bagian plane 2
 	setPoint(&planeBreak2[0], planeBreak1[2].x+50, planeBreak1[2].y);
@@ -351,8 +442,8 @@ void drawPlaneBreak(Point* plane) {
     }
     drawLine(&planeBreak2[3], &planeBreak2[0], &cDestroy);
     //Warnai
-    setPoint(&temp2, planeBreak2[0].x+50, planeBreak2[0].y+20);
-    solidFill(&temp2, cDestroy);
+    setPoint(&firepoint2, planeBreak2[0].x+50, planeBreak2[0].y+20);
+    solidFill(&firepoint2, cDestroy);
 
     //Buat bagian plane 3
 	setPoint(&planeBreak3[0], planeBreak2[1].x+50, planeBreak2[1].y);
@@ -364,30 +455,36 @@ void drawPlaneBreak(Point* plane) {
     }
     drawLine(&planeBreak3[3], &planeBreak3[0], &cDestroy);
     //Warnai
-    setPoint(&temp3, planeBreak3[0].x+10, planeBreak3[0].y);
-    solidFill(&temp3, cDestroy);
+    setPoint(&firepoint3, planeBreak3[0].x+10, planeBreak3[0].y);
+    solidFill(&firepoint3, cDestroy);
 
     //Jatuhkan
-    struct readFallDownParams readparams1;
-    struct readFallDownParams readparams2;
-    struct readFallDownParams readparams3;
+    struct readFallSpinParams readparams1;
+    struct readFallSpinParams readparams2;
+    struct readFallSpinParams readparams3;
     
+    setPoint(&pivot1, planeBreak1[0].x+20, planeBreak1[0].y-10);
     readparams1.p = planeBreak1;
-    readparams1.firepoint=temp1;
+    readparams1.firepoint=firepoint1;
     readparams1.c= cDestroy;
+    readparams1.pivot = pivot1;
 
+    setPoint(&pivot2, planeBreak2[0].x+10, planeBreak2[0].y+10);
     readparams2.p = planeBreak2;
-    readparams2.firepoint=temp2;
+    readparams2.firepoint=firepoint2;
     readparams2.c= cDestroy;
+    readparams2.pivot = pivot2;
 
+    setPoint(&pivot3, planeBreak3[0].x+10, planeBreak3[0].y);
     readparams3.p = planeBreak3;
-    readparams3.firepoint=temp3;
+    readparams3.firepoint=firepoint3;
     readparams3.c= cDestroy;
+    readparams3.pivot = pivot3;
 
     pthread_t thrfd1, thrfd2, thrfd3;
-    ret = pthread_create(&thrfd1, NULL, falldown4point, &readparams1);
-	ret *= pthread_create(&thrfd1, NULL, falldown4point, &readparams2);
-	ret *= pthread_create(&thrfd1, NULL, falldown4point, &readparams3);
+    ret = pthread_create(&thrfd1, NULL, fallSpin, &readparams1);
+	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams2);
+	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams3);
 
 	if (!ret) {
 		pthread_join(thrfd1, NULL);
