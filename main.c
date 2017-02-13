@@ -20,12 +20,6 @@ typedef struct Colors {
 struct fb_var_screeninfo vinfo;
 struct fb_fix_screeninfo finfo;
 
-struct readFallDownParams {
-	Point* p;
-	Point firepoint;
-	Color c;
-};
-
 Color bg; // warna background
 char* fbp; // memory map ke fb0
 int fbfd; // file fb0
@@ -35,6 +29,7 @@ int overPixel = 10; // intinya satu baris ada 1376 pixel = 1366 pixel + 10 pixel
 int bytePerPixel;
 int srcXBeam, srcYBeam, destXBeam;
 int headPlane, tailPlane;
+Point roda1, roda2;
 
 void setPoint(Point* p, int x, int y) {
     p -> x = x;
@@ -263,33 +258,32 @@ void solidFillReverse(Point* firepoint, Color c){
 }
 
 
-void* falldown4point(void* params) {
+void falldown4point(Point* p, Point firepoint, Color c) {
 	int i, j;
-	struct readFallDownParams *readparams = params;
-	int minY = readparams->p[0].y;
-	int minX = readparams->p[0].x;
-	int maxX = readparams->p[0].x;
+	int minY = p[0].y;
+	int minX = p[0].x;
+	int maxX = p[0].x;
 
 	//cari titik terbawah dan teratas
 	for (i=1; i<4; i++) {
-		if (readparams->p[i].y>minY)
-			minY = readparams->p[i].y;
+		if (p[i].y>minY)
+			minY = p[i].y;
 	}
 
 	//cari titik terkiri dan terkanan
 	for (i=1; i<4; i++) {
-		if (readparams->p[i].x > maxX)
-			maxX = readparams->p[i].x;
-		if (readparams->p[i].x < minX)
-			minX = readparams->p[i].x;
+		if (p[i].x > maxX)
+			maxX = p[i].x;
+		if (p[i].x < minX)
+			minX = p[i].x;
 	}
 
 	while (minY < vinfo.yres-40) {
 		//hapus
 		for (i=0; i<3; i++) {
-			drawLine(&readparams->p[i], &readparams->p[i + 1], &bg);
+			drawLine(&p[i], &p[i + 1], &bg);
 	    }
-	    drawLine(&readparams->p[3], &readparams->p[0], &bg);
+	    drawLine(&p[3], &p[0], &bg);
 
 	    for(int x=minX; x<=maxX; x++){
 			for(int y=0; y<minY; y++){
@@ -303,15 +297,15 @@ void* falldown4point(void* params) {
 
 	    //gambar ulang
 		for (i=0; i<4; i++) {
-			setPoint(&readparams->p[i], readparams->p[i].x, readparams->p[i].y+1);
+			setPoint(&p[i], p[i].x, p[i].y+1);
 		}
 		for (i=0; i<3; i++) {
-			drawLine(&readparams->p[i], &readparams->p[i + 1], &readparams->c);
+			drawLine(&p[i], &p[i + 1], &c);
 	    }
-	    drawLine(&readparams->p[3], &readparams->p[0], &readparams->c);
+	    drawLine(&p[3], &p[0], &c);
 	    //warnai ulang
-	    setPoint(&readparams->firepoint, readparams->firepoint.x, readparams->firepoint.y+1);
-	    solidFill(&readparams->firepoint,  readparams->c);
+	    setPoint(&firepoint, firepoint.x, firepoint.y+1);
+	    solidFill(&firepoint, c);
 	    minY++;
 	    usleep(5000);
 	}
@@ -319,7 +313,7 @@ void* falldown4point(void* params) {
 void drawPlaneBreak(Point* plane) {
 	Color cDestroy;
 	setColor(&cDestroy, 255, 255, 255);
-	int i, j, ret;
+	int i, j;
 	Point* planeBreak1;
 	Point* planeBreak2;
 	Point* planeBreak3;
@@ -332,7 +326,7 @@ void drawPlaneBreak(Point* plane) {
 	setPoint(&planeBreak1[0], plane[0].x, plane[0].y);
 	setPoint(&planeBreak1[1], plane[1].x, plane[1].y);
 	setPoint(&planeBreak1[2], plane[1].x+50, plane[2].y);
-	setPoint(&planeBreak1[3], plane[0].x+100, plane[0].y);
+	setPoint(&planeBreak1[3], plane[0].x+60, plane[0].y);
 	for(i = 0; i < 3; i++) {
         drawLine(&planeBreak1[i], &planeBreak1[i + 1], &cDestroy);
     }
@@ -342,23 +336,23 @@ void drawPlaneBreak(Point* plane) {
     solidFill(&temp1, cDestroy);
 
 	//Buat bagian plane 2
-	setPoint(&planeBreak2[0], planeBreak1[2].x+50, planeBreak1[2].y);
-	setPoint(&planeBreak2[1], plane[2].x+50, plane[2].y);
-	setPoint(&planeBreak2[2], plane[5].x+50, plane[5].y);
-	setPoint(&planeBreak2[3], planeBreak1[3].x+50, planeBreak1[3].y);
+	setPoint(&planeBreak2[0], planeBreak1[2].x+10, planeBreak1[2].y);
+	setPoint(&planeBreak2[1], plane[2].x+10, plane[2].y);
+	setPoint(&planeBreak2[2], plane[5].x+10, plane[5].y);
+	setPoint(&planeBreak2[3], planeBreak1[3].x+10, planeBreak1[3].y);
 	for(i = 0; i < 3; i++) {
         drawLine(&planeBreak2[i], &planeBreak2[i + 1], &cDestroy);
     }
     drawLine(&planeBreak2[3], &planeBreak2[0], &cDestroy);
     //Warnai
-    setPoint(&temp2, planeBreak2[0].x+50, planeBreak2[0].y+20);
+    setPoint(&temp2, planeBreak2[0].x+10, planeBreak2[0].y+20);
     solidFill(&temp2, cDestroy);
 
     //Buat bagian plane 3
-	setPoint(&planeBreak3[0], planeBreak2[1].x+50, planeBreak2[1].y);
-	setPoint(&planeBreak3[1], plane[3].x+100, plane[3].y);
-	setPoint(&planeBreak3[2], plane[4].x+100, plane[4].y);
-	setPoint(&planeBreak3[3], planeBreak2[2].x+50, planeBreak2[2].y);
+	setPoint(&planeBreak3[0], planeBreak2[1].x+10, planeBreak2[1].y);
+	setPoint(&planeBreak3[1], plane[3].x+20, plane[3].y);
+	setPoint(&planeBreak3[2], plane[4].x+20, plane[4].y);
+	setPoint(&planeBreak3[3], planeBreak2[2].x+10, planeBreak2[2].y);
 	for(i = 0; i < 3; i++) {
         drawLine(&planeBreak3[i], &planeBreak3[i + 1], &cDestroy);
     }
@@ -368,32 +362,9 @@ void drawPlaneBreak(Point* plane) {
     solidFill(&temp3, cDestroy);
 
     //Jatuhkan
-    struct readFallDownParams readparams1;
-    struct readFallDownParams readparams2;
-    struct readFallDownParams readparams3;
-    
-    readparams1.p = planeBreak1;
-    readparams1.firepoint=temp1;
-    readparams1.c= cDestroy;
-
-    readparams2.p = planeBreak2;
-    readparams2.firepoint=temp2;
-    readparams2.c= cDestroy;
-
-    readparams3.p = planeBreak3;
-    readparams3.firepoint=temp3;
-    readparams3.c= cDestroy;
-
-    pthread_t thrfd1, thrfd2, thrfd3;
-    ret = pthread_create(&thrfd1, NULL, falldown4point, &readparams1);
-	ret *= pthread_create(&thrfd1, NULL, falldown4point, &readparams2);
-	ret *= pthread_create(&thrfd1, NULL, falldown4point, &readparams3);
-
-	if (!ret) {
-		pthread_join(thrfd1, NULL);
-		pthread_join(thrfd2, NULL);
-		pthread_join(thrfd3, NULL);
-	}
+    falldown4point(planeBreak1, temp1, cDestroy);
+    falldown4point(planeBreak2, temp2, cDestroy);
+    falldown4point(planeBreak3, temp3, cDestroy);
 }
 
 void printSquare (int edge, int loc_x, int loc_y, Color C) {
@@ -465,8 +436,14 @@ void* drawPlane() {
 	Color cDestroy;
 	setColor(&cDestroy, 255, 255, 255);
 	int i;
+	Point* planeBreak1;
+	Point* planeBreak2;
+	Point* planeBreak3;
 	Point temp, temp1, temp2;
 	Point circle, circle1;
+	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
     Color c, cDel;
     setColor(&c, 255, 0, 0);
     Point* plane;
@@ -514,6 +491,8 @@ void* drawPlane() {
                 drawCircle(13, circle, 2, bg);
                 drawCircle(12, circle1, 2, c);
                 drawCircle(13, circle1, 2, bg);
+                roda1 = circle;
+                roda2 = circle1;
                 drawLine(&plane[5], &plane[0], &c);
                 
 				//circle.x = 90 + 260;
@@ -717,17 +696,209 @@ void connectBuffer() {
     }
 }
 
+void drawCircleProjectory(Point start, Point finish, int deltax, int deltay, int p){
+	Color c;
+	setColor(&c, 255, 0, 0);
+	Color cdel;
+	setColor(&cdel, 0, 0, 0);
+	int p1;
+	if(start.y == finish.y){
+		if(start.x<=finish.x){
+			//printf("babx\n");
+			while(start.x <= finish.x){
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.x++;
+			}
+		}
+	}
+	else if(start.x == finish.x){
+		if(start.y<=finish.y){
+			while(start.y <= finish.y){
+				long location = (start.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (start.y+vinfo.yoffset) * finfo.line_length;
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.y++;
+			}
+		}
+	}
+	else{
+		drawCircle(12, start, 2, c);
+		usleep(5000);
+		drawCircle(12, start, 2, cdel);
+		if(p>=0){
+			start.x++;
+			start.y++;
+			p1 = p + 2*deltay - 2*deltax;
+		}
+		else{
+			start.x++;
+			p1 = p + 2*deltay;
+		}
+		drawCircleProjectory(start,finish,deltax,deltay,p1);
+	}
+}
+
+//gambar garis naik start.y > finish.y
+void drawCircleProjectory2(Point start, Point finish, int deltax, int deltay, int p){
+	Color c;
+	setColor(&c, 255, 0, 0);
+	Color cdel;
+	setColor(&cdel, 0, 0, 0);
+	int p1;
+	if(start.y == finish.y){
+		if(start.x<=finish.x){
+			while(start.x <= finish.x){
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.x++;
+			}
+		}
+	}
+	else if(start.x == finish.x){
+		if(start.y>=finish.y){
+			while(start.y >= finish.y){
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.y--;
+			}
+		}
+	}
+	else{
+		drawCircle(12, start, 2, c);
+		usleep(5000);
+		drawCircle(12, start, 2, cdel);
+		if(p>=0){
+			start.x++;
+			start.y--;
+			p1 = p + 2*deltay - 2*deltax;
+		}
+		else{
+			start.x++;
+			p1 = p + 2*deltay;
+		}
+		drawCircleProjectory2(start,finish,deltax,deltay,p1);
+	}
+}
+
+void * drawFallingWheels(void * p22){	
+	Point * p = (Point *) p22;
+	Point start = *p;
+	Point finish;
+	finish.x = start.x;
+	finish.y = vinfo.yres-1;
+	
+	//rumus bersenham itu
+	int deltay = finish.y - start.y;
+	int deltax = finish.x - start.x;
+	int px = 2*deltay -deltax;
+	
+	//kalo start y > finish y pake drawline2
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	
+	
+	int distx = (vinfo.xres-1 - start.x)/2;
+	int disty = (vinfo.xres-1 - start.x)/2;
+	distx -= 1;
+	disty -= 1;
+	
+	start = finish;
+	finish.x = finish.x + distx/2;
+	finish.y = finish.y - disty/2;
+	
+	deltay = finish.y - start.y;
+	deltax = finish.x - start.x;
+	px = 2*deltay -deltax;
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/2;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/2;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+	
+	start = finish;
+	finish.x = finish.x + distx/4;
+	finish.y = finish.y - disty/4;
+	
+	deltay = finish.y - start.y;
+	deltax = finish.x - start.x;
+	px = 2*deltay -deltax;
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+	
+	start = finish;
+	finish.x = finish.x + distx/4;
+	finish.y = finish.y - disty/4;
+	
+	deltay = finish.y - start.y;
+	deltax = finish.x - start.x;
+	px = 2*deltay -deltax;
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+}
+
 int main() {
     setColor(&bg, 0, 0, 255);
     connectBuffer();
     clearScreen(&bg);
-    pthread_t thrPlane, thrLasergun, thrBeam;
+    pthread_t thrPlane, thrLasergun, thrBeam, thrFallWheel, thrFallWheel2;
     pthread_create(&thrPlane, NULL, drawPlane, "thrPlane");
     pthread_create(&thrLasergun, NULL, drawLasergun, "thrLasergun");
     pthread_create(&thrBeam, NULL, drawBeam, "thrBeam");
     pthread_join(thrBeam, NULL); // sampe berhasil nembak
     pthread_join(thrPlane, NULL);
     pthread_cancel(thrLasergun);
+    clearScreen(&bg);
+    //drawFallingWheels(p);
+    pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
+    pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
+    pthread_join(thrFallWheel, NULL);
+    pthread_join(thrFallWheel2, NULL);
     munmap(fbp, screensize);
     close(fbfd);
     return 0;
