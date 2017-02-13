@@ -493,8 +493,262 @@ void* fallSpin(void *params) {
 		usleep(100000);
 	}
 }
+
+
+void printSquare (int edge, int loc_x, int loc_y, Color C) {
+    long int location;
+    int i,j;
+    if (((loc_x)>=0) && ((loc_x + edge)<vinfo.xres) && ((loc_y)>=0) && ((loc_y + edge)<vinfo.yres)) {
+		for (i = loc_x; i < (loc_x+edge); i++) {
+			for (j = loc_y; j < (loc_y+edge); j++) {
+				location = (i+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (j+vinfo.yoffset) * finfo.line_length;
+				
+				if (fbp + location) { //check for segmentation fault
+					if (vinfo.bits_per_pixel == 32) {
+						*(fbp + location) = C.a;            //Blue
+						*(fbp + location + 1) = C.r;        //Green
+						*(fbp + location + 2) = C.g;        //Red
+						*(fbp + location + 3) = C.b;          //Transparancy
+					} else  { //assume 16bpp
+						int r = C.a;     //Red
+						int g = C.r;     //Green
+						int b = C.g;     //Blue
+						
+						unsigned short int t = r<<11 | g << 5 | b;
+						*((unsigned short int*)(fbp + location)) = t;
+					}
+				} else {
+					return;
+				}
+			}
+		}
+	}
+}
+
+void plot8pixel (Point P, int p, int q, int W, Color C) {
+    printSquare(W, P.x+p, P.y+q, C);
+    printSquare(W, P.x-p, P.y+q, C);
+    printSquare(W, P.x+p, P.y-q, C);
+    printSquare(W, P.x-p, P.y-q, C);
+
+    printSquare(W, P.x+q, P.y+p, C);
+    printSquare(W, P.x-q, P.y+p, C);
+    printSquare(W, P.x+q, P.y-p, C);
+    printSquare(W, P.x-q, P.y-p, C);
+}
+
+
+
+void drawCircle (int radius, Point P, int W, Color C) {
+    int d, p, q;
+
+    p = 0;
+    q = radius;
+    d = 3 - 2*radius;
+
+    plot8pixel(P, p, q, W, C);
+
+    while (p < q) {
+        p++;
+        if (d<0) {
+            d = d + 4*p + 6;
+        }
+        else {
+            q--;
+            d = d + 4*(p-q) + 10;
+        }
+
+        plot8pixel(P, p, q, W, C);
+    }
+}
+
+void drawCircleProjectory(Point start, Point finish, int deltax, int deltay, int p){
+	Color c;
+	setColor(&c, 255, 0, 0);
+	Color cdel;
+	setColor(&cdel, 0, 0, 0);
+	int p1;
+	if(start.y == finish.y){
+		if(start.x<=finish.x){
+			//printf("babx\n");
+			while(start.x <= finish.x){
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.x+=3;
+			}
+		}
+	}
+	else if(start.x == finish.x){
+		if(start.y<=finish.y){
+			while(start.y <= finish.y){
+				long location = (start.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (start.y+vinfo.yoffset) * finfo.line_length;
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.y+=3;
+			}
+		}
+	}
+	else{
+		drawCircle(12, start, 2, c);
+		usleep(5000);
+		drawCircle(12, start, 2, cdel);
+		if(p>=0){
+			start.x++;
+			start.y++;
+			p1 = p + 2*deltay - 2*deltax;
+		}
+		else{
+			start.x++;
+			p1 = p + 2*deltay;
+		}
+		drawCircleProjectory(start,finish,deltax,deltay,p1);
+	}
+}
+
+//gambar garis naik start.y > finish.y
+void drawCircleProjectory2(Point start, Point finish, int deltax, int deltay, int p){
+	Color c;
+	setColor(&c, 255, 0, 0);
+	Color cdel;
+	setColor(&cdel, 0, 0, 0);
+	int p1;
+	if(start.y == finish.y){
+		if(start.x<=finish.x){
+			while(start.x <= finish.x){
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.x++;
+			}
+		}
+	}
+	else if(start.x == finish.x){
+		if(start.y>=finish.y){
+			while(start.y >= finish.y){
+				drawCircle(12, start, 2, c);
+				usleep(5000);
+				drawCircle(12, start, 2, cdel);
+				start.y--;
+			}
+		}
+	}
+	else{
+		drawCircle(12, start, 2, c);
+		usleep(5000);
+		drawCircle(12, start, 2, cdel);
+		if(p>=0){
+			start.x++;
+			start.y--;
+			p1 = p + 2*deltay - 2*deltax;
+		}
+		else{
+			start.x++;
+			p1 = p + 2*deltay;
+		}
+		drawCircleProjectory2(start,finish,deltax,deltay,p1);
+	}
+}
+
+void * drawFallingWheels(void * p22){	
+	Point * p = (Point *) p22;
+	Point start = *p;
+	Point finish;
+	finish.x = start.x;
+	finish.y = vinfo.yres-1;
+	
+	//rumus bersenham itu
+	int deltay = finish.y - start.y;
+	int deltax = finish.x - start.x;
+	int px = 2*deltay -deltax;
+	
+	//kalo start y > finish y pake drawline2
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	
+	
+	int distx = (vinfo.xres-1 - start.x)/2;
+	int disty = (vinfo.xres-1 - start.x)/2;
+	distx -= 1;
+	disty -= 1;
+	
+	start = finish;
+	finish.x = finish.x + distx/2;
+	finish.y = finish.y - disty/2;
+	
+	deltay = finish.y - start.y;
+	deltax = finish.x - start.x;
+	px = 2*deltay -deltax;
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/2;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/2;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+	
+	start = finish;
+	finish.x = finish.x + distx/4;
+	finish.y = finish.y - disty/4;
+	
+	deltay = finish.y - start.y;
+	deltax = finish.x - start.x;
+	px = 2*deltay -deltax;
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+	
+	start = finish;
+	finish.x = finish.x + distx/4;
+	finish.y = finish.y - disty/4;
+	
+	deltay = finish.y - start.y;
+	deltax = finish.x - start.x;
+	px = 2*deltay -deltax;
+	if(deltay < 0){
+		deltay = deltay * -1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+	}
+	else{
+		drawCircleProjectory(start,finish,deltax,deltay,px);
+		start = finish;
+		finish.x = finish.x + distx/4;
+		finish.y = vinfo.yres-1;
+		drawCircleProjectory2(start,finish,deltax,deltay,px);
+	}
+}
+
 void drawPlaneBreak(Point* plane) {
-	/*
 	Color cDestroy;
 	setColor(&cDestroy, 255, 255, 0);
 	int i, j, ret;
@@ -546,11 +800,10 @@ void drawPlaneBreak(Point* plane) {
     //Warnai
     setPoint(&firepoint3, planeBreak3[0].x+10, planeBreak3[0].y);
     solidFill(&firepoint3, cDestroy);
-    //sleep(2);
+    usleep(400000);
     clearFill(&firepoint1, cDestroy);
     clearFill(&firepoint2, cDestroy);
     clearFill(&firepoint3, cDestroy);
-    //sleep(3);
 
     //Jatuhkan
     struct readFallSpinParams readparams1;
@@ -575,82 +828,25 @@ void drawPlaneBreak(Point* plane) {
     readparams3.c= cDestroy;
     readparams3.pivot = pivot3;
 
-    pthread_t thrfd1, thrfd2, thrfd3;
+    pthread_t thrfd1, thrfd2, thrfd3, thrFallWheel, thrFallWheel2;
+    ret *= pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
+    ret *= pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
+    usleep(400000);
     ret = pthread_create(&thrfd1, NULL, fallSpin, &readparams1);
 	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams2);
 	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams3);
-
+	
+    
 	if (!ret) {
 		pthread_join(thrfd1, NULL);
 		pthread_join(thrfd2, NULL);
 		pthread_join(thrfd3, NULL);
-	}*/
-}
-
-void printSquare (int edge, int loc_x, int loc_y, Color C) {
-    long int location;
-    int i,j;
-    if (((loc_x)>=0) && ((loc_x + edge)<vinfo.xres) && ((loc_y)>=0) && ((loc_y + edge)<vinfo.yres)) {
-		for (i = loc_x; i < (loc_x+edge); i++) {
-			for (j = loc_y; j < (loc_y+edge); j++) {
-				location = (i+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (j+vinfo.yoffset) * finfo.line_length;
-				
-				if (fbp + location) { //check for segmentation fault
-					if (vinfo.bits_per_pixel == 32) {
-						*(fbp + location) = C.a;            //Blue
-						*(fbp + location + 1) = C.r;        //Green
-						*(fbp + location + 2) = C.g;        //Red
-						*(fbp + location + 3) = C.b;          //Transparancy
-					} else  { //assume 16bpp
-						int r = C.a;     //Red
-						int g = C.r;     //Green
-						int b = C.g;     //Blue
-						
-						unsigned short int t = r<<11 | g << 5 | b;
-						*((unsigned short int*)(fbp + location)) = t;
-					}
-				} else {
-					return;
-				}
-			}
-		}
+		pthread_join(thrFallWheel, NULL);
+    	pthread_join(thrFallWheel2, NULL);
 	}
+
 }
 
-void plot8pixel (Point P, int p, int q, int W, Color C) {
-    printSquare(W, P.x+p, P.y+q, C);
-    printSquare(W, P.x-p, P.y+q, C);
-    printSquare(W, P.x+p, P.y-q, C);
-    printSquare(W, P.x-p, P.y-q, C);
-
-    printSquare(W, P.x+q, P.y+p, C);
-    printSquare(W, P.x-q, P.y+p, C);
-    printSquare(W, P.x+q, P.y-p, C);
-    printSquare(W, P.x-q, P.y-p, C);
-}
-
-void drawCircle (int radius, Point P, int W, Color C) {
-    int d, p, q;
-
-    p = 0;
-    q = radius;
-    d = 3 - 2*radius;
-
-    plot8pixel(P, p, q, W, C);
-
-    while (p < q) {
-        p++;
-        if (d<0) {
-            d = d + 4*p + 6;
-        }
-        else {
-            q--;
-            d = d + 4*(p-q) + 10;
-        }
-
-        plot8pixel(P, p, q, W, C);
-    }
-}
 
 void* drawPlane() {
 	Color cDestroy;
@@ -667,7 +863,9 @@ void* drawPlane() {
     headPlane = tailPlane - lengthPlane;
    
     int j;
+    Point* sayap;
 
+    sayap = (Point*) malloc(4* sizeof(Point));
     while (!kaboom) { // selama pesawat belum ketembak
         while (headPlane > 0) { // selama pesawat belum mentok di kiri
             if (kaboom) { // pesawat kena tembak
@@ -689,6 +887,19 @@ void* drawPlane() {
                // drawCircle(12, circle, 2, bg);
                 drawLine(&plane[5], &plane[0], &bg);
                 
+
+                //bikin sayap
+                setPoint(&sayap[0], headPlane+60, 70);
+                setPoint(&sayap[1], headPlane+100, 10);
+                setPoint(&sayap[2], headPlane+130, 10);
+                setPoint(&sayap[3], headPlane+90, 70);
+                for(j = 0; j < 3; j++) {
+                    drawLine(&sayap[j], &sayap[j + 1], &c);
+                }               
+                drawLine(&sayap[3], &sayap[0], &c);
+                setPoint(&temp, sayap[1].x, sayap[1].y+20);
+                solidFill(&temp, c);
+
                 setPoint(&plane[0], headPlane, 90);
                 setPoint(&plane[1], headPlane + 40, 50);
                 setPoint(&plane[2], headPlane + 190, 50);
@@ -910,191 +1121,6 @@ void connectBuffer() {
     }
 }
 
-void drawCircleProjectory(Point start, Point finish, int deltax, int deltay, int p){
-	Color c;
-	setColor(&c, 255, 0, 0);
-	Color cdel;
-	setColor(&cdel, 0, 0, 0);
-	int p1;
-	if(start.y == finish.y){
-		if(start.x<=finish.x){
-			//printf("babx\n");
-			while(start.x <= finish.x){
-				drawCircle(12, start, 2, c);
-				usleep(5000);
-				drawCircle(12, start, 2, cdel);
-				start.x++;
-			}
-		}
-	}
-	else if(start.x == finish.x){
-		if(start.y<=finish.y){
-			while(start.y <= finish.y){
-				long location = (start.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (start.y+vinfo.yoffset) * finfo.line_length;
-				drawCircle(12, start, 2, c);
-				usleep(5000);
-				drawCircle(12, start, 2, cdel);
-				start.y++;
-			}
-		}
-	}
-	else{
-		drawCircle(12, start, 2, c);
-		usleep(5000);
-		drawCircle(12, start, 2, cdel);
-		if(p>=0){
-			start.x++;
-			start.y++;
-			p1 = p + 2*deltay - 2*deltax;
-		}
-		else{
-			start.x++;
-			p1 = p + 2*deltay;
-		}
-		drawCircleProjectory(start,finish,deltax,deltay,p1);
-	}
-}
-
-//gambar garis naik start.y > finish.y
-void drawCircleProjectory2(Point start, Point finish, int deltax, int deltay, int p){
-	Color c;
-	setColor(&c, 255, 0, 0);
-	Color cdel;
-	setColor(&cdel, 0, 0, 0);
-	int p1;
-	if(start.y == finish.y){
-		if(start.x<=finish.x){
-			while(start.x <= finish.x){
-				drawCircle(12, start, 2, c);
-				usleep(5000);
-				drawCircle(12, start, 2, cdel);
-				start.x++;
-			}
-		}
-	}
-	else if(start.x == finish.x){
-		if(start.y>=finish.y){
-			while(start.y >= finish.y){
-				drawCircle(12, start, 2, c);
-				usleep(5000);
-				drawCircle(12, start, 2, cdel);
-				start.y--;
-			}
-		}
-	}
-	else{
-		drawCircle(12, start, 2, c);
-		usleep(5000);
-		drawCircle(12, start, 2, cdel);
-		if(p>=0){
-			start.x++;
-			start.y--;
-			p1 = p + 2*deltay - 2*deltax;
-		}
-		else{
-			start.x++;
-			p1 = p + 2*deltay;
-		}
-		drawCircleProjectory2(start,finish,deltax,deltay,p1);
-	}
-}
-
-void * drawFallingWheels(void * p22){	
-	Point * p = (Point *) p22;
-	Point start = *p;
-	Point finish;
-	finish.x = start.x;
-	finish.y = vinfo.yres-1;
-	
-	//rumus bersenham itu
-	int deltay = finish.y - start.y;
-	int deltax = finish.x - start.x;
-	int px = 2*deltay -deltax;
-	
-	//kalo start y > finish y pake drawline2
-	if(deltay < 0){
-		deltay = deltay * -1;
-		drawCircleProjectory2(start,finish,deltax,deltay,px);
-	}
-	else{
-		drawCircleProjectory(start,finish,deltax,deltay,px);
-	}
-	
-	
-	int distx = (vinfo.xres-1 - start.x)/2;
-	int disty = (vinfo.xres-1 - start.x)/2;
-	distx -= 1;
-	disty -= 1;
-	
-	start = finish;
-	finish.x = finish.x + distx/2;
-	finish.y = finish.y - disty/2;
-	
-	deltay = finish.y - start.y;
-	deltax = finish.x - start.x;
-	px = 2*deltay -deltax;
-	if(deltay < 0){
-		deltay = deltay * -1;
-		drawCircleProjectory2(start,finish,deltax,deltay,px);
-		start = finish;
-		finish.x = finish.x + distx/2;
-		finish.y = vinfo.yres-1;
-		drawCircleProjectory(start,finish,deltax,deltay,px);
-	}
-	else{
-		drawCircleProjectory(start,finish,deltax,deltay,px);
-		start = finish;
-		finish.x = finish.x + distx/2;
-		finish.y = vinfo.yres-1;
-		drawCircleProjectory2(start,finish,deltax,deltay,px);
-	}
-	
-	start = finish;
-	finish.x = finish.x + distx/4;
-	finish.y = finish.y - disty/4;
-	
-	deltay = finish.y - start.y;
-	deltax = finish.x - start.x;
-	px = 2*deltay -deltax;
-	if(deltay < 0){
-		deltay = deltay * -1;
-		drawCircleProjectory2(start,finish,deltax,deltay,px);
-		start = finish;
-		finish.x = finish.x + distx/4;
-		finish.y = vinfo.yres-1;
-		drawCircleProjectory(start,finish,deltax,deltay,px);
-	}
-	else{
-		drawCircleProjectory(start,finish,deltax,deltay,px);
-		start = finish;
-		finish.x = finish.x + distx/4;
-		finish.y = vinfo.yres-1;
-		drawCircleProjectory2(start,finish,deltax,deltay,px);
-	}
-	
-	start = finish;
-	finish.x = finish.x + distx/4;
-	finish.y = finish.y - disty/4;
-	
-	deltay = finish.y - start.y;
-	deltax = finish.x - start.x;
-	px = 2*deltay -deltax;
-	if(deltay < 0){
-		deltay = deltay * -1;
-		drawCircleProjectory2(start,finish,deltax,deltay,px);
-		start = finish;
-		finish.x = finish.x + distx/4;
-		finish.y = vinfo.yres-1;
-		drawCircleProjectory(start,finish,deltax,deltay,px);
-	}
-	else{
-		drawCircleProjectory(start,finish,deltax,deltay,px);
-		start = finish;
-		finish.x = finish.x + distx/4;
-		finish.y = vinfo.yres-1;
-		drawCircleProjectory2(start,finish,deltax,deltay,px);
-	}
-}
 
 int main() {
     setColor(&bg, 0, 0, 255);
@@ -1108,10 +1134,6 @@ int main() {
     pthread_join(thrPlane, NULL);
     pthread_cancel(thrLasergun);
     clearScreen(&bg);
-    pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
-    pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
-    pthread_join(thrFallWheel, NULL);
-    pthread_join(thrFallWheel2, NULL);
     munmap(fbp, screensize);
     close(fbfd);
     return 0;
