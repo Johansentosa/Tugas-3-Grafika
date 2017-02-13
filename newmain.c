@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
+#include <math.h>
 
 typedef struct Points {
     int x;
@@ -19,6 +20,19 @@ typedef struct Colors {
 } Color;
 struct fb_var_screeninfo vinfo;
 struct fb_fix_screeninfo finfo;
+
+struct readFallDownParams {
+	Point* p;
+	Point firepoint;
+	Color c;
+};
+
+struct readFallSpinParams {
+	Point* p;
+	Point firepoint;
+	Color c;
+	Point pivot;
+};
 
 Color bg; // warna background
 char* fbp; // memory map ke fb0
@@ -156,10 +170,71 @@ void drawLine(Point* p1, Point* p2, Color* c) {
     }
 }
 
-
+void clearFill (Point* firepoint, Color cbef) {
+	Point newfp;
+	//Color fillColor;
+	long location;
+	//location = (firepoint->x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (firepoint->y+vinfo.yoffset) * finfo.line_length;
+	int a = cbef.a;
+	int r = cbef.r;
+	int g = cbef.g;
+	int b = cbef.b;
+	/*printf("a = %d, r = %d, g = %d, b = %d", a, r, g, b);
+	setColor(&fillColor, r, g, b);*/
+    //hapus warna
+    if(firepoint->x>1 && firepoint->x<vinfo.xres-1 && firepoint->y>1 && firepoint->y<vinfo.yres-1){
+        newfp.x = firepoint->x+1;
+        newfp.y = firepoint->y;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==a && *(fbp + location +1)==r && *(fbp + location +2) ==g){
+            //ganti jadi rgb yang di mau buat gnti warna
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = 0;
+            clearFill(&newfp, cbef);
+        }
+        
+        newfp.x = firepoint->x-1;
+        newfp.y = firepoint->y;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==a && *(fbp + location +1)==r && *(fbp + location +2) ==g){
+            //ganti jadi rgb yang di mau buat gnti warna
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = 0;
+            clearFill(&newfp, cbef);
+        }
+        
+        newfp.x = firepoint->x;
+        newfp.y = firepoint->y+1;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==a && *(fbp + location +1)==r && *(fbp + location +2) ==g){
+            //ganti jadi rgb yang di mau buat gnti warna
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = 0;
+            clearFill(&newfp, cbef);
+        }
+        
+        newfp.x = firepoint->x;
+        newfp.y = firepoint->y-1;
+        location = (newfp.x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (newfp.y+vinfo.yoffset) * finfo.line_length;
+        if(*(fbp + location)==a && *(fbp + location +1)==r && *(fbp + location +2) ==g){
+            //ganti jadi rgb yang di mau buat gnti warna
+            *(fbp + location) =0;
+            *(fbp + location +1) = 0;
+            *(fbp + location +2) = 0;
+            *(fbp + location + 3) = 0;
+            clearFill(&newfp, cbef);
+        }
+    }
+}
 
 void solidFill(Point* firepoint, Color c){
-    Point newfp;
+	Point newfp;
     if(firepoint->x>1 && firepoint->x<vinfo.xres-1 && firepoint->y>1 && firepoint->y<vinfo.yres-1){
         newfp.x = firepoint->x+1;
         newfp.y = firepoint->y;
@@ -258,32 +333,33 @@ void solidFillReverse(Point* firepoint, Color c){
 }
 
 
-void falldown4point(Point* p, Point firepoint, Color c) {
+void* falldown4point(void* params) {
 	int i, j;
-	int minY = p[0].y;
-	int minX = p[0].x;
-	int maxX = p[0].x;
+	struct readFallDownParams *readparams = params;
+	int minY = readparams->p[0].y;
+	int minX = readparams->p[0].x;
+	int maxX = readparams->p[0].x;
 
 	//cari titik terbawah dan teratas
 	for (i=1; i<4; i++) {
-		if (p[i].y>minY)
-			minY = p[i].y;
+		if (readparams->p[i].y>minY)
+			minY = readparams->p[i].y;
 	}
 
 	//cari titik terkiri dan terkanan
 	for (i=1; i<4; i++) {
-		if (p[i].x > maxX)
-			maxX = p[i].x;
-		if (p[i].x < minX)
-			minX = p[i].x;
+		if (readparams->p[i].x > maxX)
+			maxX = readparams->p[i].x;
+		if (readparams->p[i].x < minX)
+			minX = readparams->p[i].x;
 	}
 
 	while (minY < vinfo.yres-40) {
 		//hapus
 		for (i=0; i<3; i++) {
-			drawLine(&p[i], &p[i + 1], &bg);
+			drawLine(&readparams->p[i], &readparams->p[i + 1], &bg);
 	    }
-	    drawLine(&p[3], &p[0], &bg);
+	    drawLine(&readparams->p[3], &readparams->p[0], &bg);
 
 	    for(int x=minX; x<=maxX; x++){
 			for(int y=0; y<minY; y++){
@@ -297,27 +373,136 @@ void falldown4point(Point* p, Point firepoint, Color c) {
 
 	    //gambar ulang
 		for (i=0; i<4; i++) {
-			setPoint(&p[i], p[i].x, p[i].y+1);
+			setPoint(&readparams->p[i], readparams->p[i].x, readparams->p[i].y+1);
 		}
 		for (i=0; i<3; i++) {
-			drawLine(&p[i], &p[i + 1], &c);
+			drawLine(&readparams->p[i], &readparams->p[i + 1], &readparams->c);
 	    }
-	    drawLine(&p[3], &p[0], &c);
+	    drawLine(&readparams->p[3], &readparams->p[0], &readparams->c);
 	    //warnai ulang
-	    setPoint(&firepoint, firepoint.x, firepoint.y+1);
-	    solidFill(&firepoint, c);
+	    setPoint(&readparams->firepoint, readparams->firepoint.x, readparams->firepoint.y+1);
+	    solidFill(&readparams->firepoint,  readparams->c);
 	    minY++;
 	    usleep(5000);
 	}
 }
+
+Point spinDegree(Point p, int degree) {
+	int i;
+	Point pTemp;
+	double PI = 3.14159265;
+	double degInRad = degree*PI/180;
+	pTemp.x = p.x*cos(degInRad)-p.y*sin(degInRad);
+	pTemp.y = p.x*sin(degInRad)+p.y*cos(degInRad);
+	return pTemp;
+}
+void* fallSpin(void *params) {
+	//Thread procedure untuk menjatuhkan sambil memutaint i, j;
+
+	int i;
+	Point pTemp;
+	Color cc;
+	setColor(&cc, 255, 0, 0);
+	struct readFallSpinParams *readparams = params;
+	int minY = readparams->p[0].y;
+	int maxY = readparams->p[0].y;
+	int minX = readparams->p[0].x;
+	int maxX = readparams->p[0].x;
+
+	//cari titik terbawah dan teratas
+	for (i=1; i<4; i++) {
+		if (readparams->p[i].y<minY)
+			minY = readparams->p[i].y;
+		if (readparams->p[i].y>maxY)
+			maxY = readparams->p[i].y;
+	}
+
+	//cari titik terkiri dan terkanan
+	for (i=1; i<4; i++) {
+		if (readparams->p[i].x > maxX)
+			maxX = readparams->p[i].x;
+		if (readparams->p[i].x < minX)
+			minX = readparams->p[i].x;
+	}
+
+	while (maxY < vinfo.yres-40) {
+		//hapus
+		//solidFill(&readparams->firepoint, bg);
+		clearFill(&readparams->firepoint, readparams->c);
+
+		for (i=0; i<3; i++) {
+			drawLine(&readparams->p[i], &readparams->p[i + 1], &bg);
+	    }
+	    drawLine(&readparams->p[3], &readparams->p[0], &bg);	    
+	    //clearScreen(&bg)
+	    
+	    /*for(int x=minX; x<=maxX; x++){
+			for(int y=minY; y<maxY; y++){
+				long location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
+				*(fbp + location) =0;
+				*(fbp + location +1) = 0;
+				*(fbp + location +2) = 0;
+				*(fbp + location + 3) = 0;
+				
+			}
+		}*/
+
+	    //gambar ulang dengan memutar
+	    //kembalikan ke titik 0
+	    for (i=0; i<4; i++) {
+			setPoint(&readparams->p[i], readparams->p[i].x-readparams->pivot.x, readparams->p[i].y-readparams->pivot.y);
+		}
+		setPoint(&readparams->firepoint, readparams->firepoint.x-readparams->pivot.x, readparams->firepoint.y-readparams->pivot.y);
+
+		//putar 45 derajat dan turunkan sekian piksel
+		for (i=0; i<4; i++) {
+			pTemp = spinDegree(readparams->p[i], 45);
+			setPoint(&readparams->p[i], pTemp.x, pTemp.y+30);
+		}
+		//putar firepoint dan turunkan sekian piksel
+		pTemp = spinDegree(readparams->firepoint, 45);
+		setPoint(&readparams->firepoint, pTemp.x, pTemp.y+30);
+
+		//turunkan pivot
+		setPoint(&readparams->pivot, readparams->pivot.x, readparams->pivot.y+30);
+
+		//kembalikan ke titik asal
+		for (i=0; i<4; i++) {
+			setPoint(&readparams->p[i], readparams->p[i].x+readparams->pivot.x, readparams->p[i].y+readparams->pivot.y);
+		}
+		setPoint(&readparams->firepoint, readparams->firepoint.x+readparams->pivot.x, readparams->firepoint.y+readparams->pivot.y);
+		//cari titik terbawah
+	    int maxY = readparams->p[0].y;
+		for (i=1; i<4; i++) {
+			if (readparams->p[i].y>maxY)
+				maxY = readparams->p[i].y;
+		}
+
+		if (maxY < vinfo.yres - 40) {
+		//gambar ulang
+			for (i=0; i<3; i++) {
+				drawLine(&readparams->p[i], &readparams->p[i + 1], &readparams->c);
+		    }
+		    drawLine(&readparams->p[3], &readparams->p[0], &readparams->c);
+		    //warnai ulang
+		    solidFill(&readparams->firepoint,  readparams->c);
+		} else {
+			sleep(10);
+			break;
+		}
+		usleep(100000);
+	}
+}
 void drawPlaneBreak(Point* plane) {
+	/*
 	Color cDestroy;
-	setColor(&cDestroy, 255, 255, 255);
-	int i, j;
+	setColor(&cDestroy, 255, 255, 0);
+	int i, j, ret;
 	Point* planeBreak1;
 	Point* planeBreak2;
 	Point* planeBreak3;
-	Point temp1, temp2, temp3;
+	Point firepoint1, firepoint2, firepoint3;
+	Point pivot1, pivot2, pivot3;
 	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
 	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
 	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
@@ -326,45 +511,80 @@ void drawPlaneBreak(Point* plane) {
 	setPoint(&planeBreak1[0], plane[0].x, plane[0].y);
 	setPoint(&planeBreak1[1], plane[1].x, plane[1].y);
 	setPoint(&planeBreak1[2], plane[1].x+50, plane[2].y);
-	setPoint(&planeBreak1[3], plane[0].x+60, plane[0].y);
+	setPoint(&planeBreak1[3], plane[0].x+100, plane[0].y);
 	for(i = 0; i < 3; i++) {
         drawLine(&planeBreak1[i], &planeBreak1[i + 1], &cDestroy);
     }
     drawLine(&planeBreak1[3], &planeBreak1[0], &cDestroy);
     //Warnai
-    setPoint(&temp1, planeBreak1[1].x, planeBreak1[1].y+20);
-    solidFill(&temp1, cDestroy);
+    setPoint(&firepoint1, planeBreak1[1].x, planeBreak1[1].y+20);
+    solidFill(&firepoint1, cDestroy);
 
 	//Buat bagian plane 2
-	setPoint(&planeBreak2[0], planeBreak1[2].x+10, planeBreak1[2].y);
-	setPoint(&planeBreak2[1], plane[2].x+10, plane[2].y);
-	setPoint(&planeBreak2[2], plane[5].x+10, plane[5].y);
-	setPoint(&planeBreak2[3], planeBreak1[3].x+10, planeBreak1[3].y);
+	setPoint(&planeBreak2[0], planeBreak1[2].x+50, planeBreak1[2].y);
+	setPoint(&planeBreak2[1], plane[2].x+50, plane[2].y);
+	setPoint(&planeBreak2[2], plane[5].x+50, plane[5].y);
+	setPoint(&planeBreak2[3], planeBreak1[3].x+50, planeBreak1[3].y);
 	for(i = 0; i < 3; i++) {
         drawLine(&planeBreak2[i], &planeBreak2[i + 1], &cDestroy);
     }
     drawLine(&planeBreak2[3], &planeBreak2[0], &cDestroy);
     //Warnai
-    setPoint(&temp2, planeBreak2[0].x+10, planeBreak2[0].y+20);
-    solidFill(&temp2, cDestroy);
+    setPoint(&firepoint2, planeBreak2[0].x+50, planeBreak2[0].y+20);
+    solidFill(&firepoint2, cDestroy);
+    
 
     //Buat bagian plane 3
-	setPoint(&planeBreak3[0], planeBreak2[1].x+10, planeBreak2[1].y);
-	setPoint(&planeBreak3[1], plane[3].x+20, plane[3].y);
-	setPoint(&planeBreak3[2], plane[4].x+20, plane[4].y);
-	setPoint(&planeBreak3[3], planeBreak2[2].x+10, planeBreak2[2].y);
+	setPoint(&planeBreak3[0], planeBreak2[1].x+50, planeBreak2[1].y);
+	setPoint(&planeBreak3[1], plane[3].x+100, plane[3].y);
+	setPoint(&planeBreak3[2], plane[4].x+100, plane[4].y);
+	setPoint(&planeBreak3[3], planeBreak2[2].x+50, planeBreak2[2].y);
 	for(i = 0; i < 3; i++) {
         drawLine(&planeBreak3[i], &planeBreak3[i + 1], &cDestroy);
     }
     drawLine(&planeBreak3[3], &planeBreak3[0], &cDestroy);
     //Warnai
-    setPoint(&temp3, planeBreak3[0].x+10, planeBreak3[0].y);
-    solidFill(&temp3, cDestroy);
+    setPoint(&firepoint3, planeBreak3[0].x+10, planeBreak3[0].y);
+    solidFill(&firepoint3, cDestroy);
+    //sleep(2);
+    clearFill(&firepoint1, cDestroy);
+    clearFill(&firepoint2, cDestroy);
+    clearFill(&firepoint3, cDestroy);
+    //sleep(3);
 
     //Jatuhkan
-    falldown4point(planeBreak1, temp1, cDestroy);
-    falldown4point(planeBreak2, temp2, cDestroy);
-    falldown4point(planeBreak3, temp3, cDestroy);
+    struct readFallSpinParams readparams1;
+    struct readFallSpinParams readparams2;
+    struct readFallSpinParams readparams3;
+    
+    setPoint(&pivot1, planeBreak1[0].x+20, planeBreak1[0].y-10);
+    readparams1.p = planeBreak1;
+    readparams1.firepoint=firepoint1;
+    readparams1.c= cDestroy;
+    readparams1.pivot = pivot1;
+
+    setPoint(&pivot2, planeBreak2[0].x+10, planeBreak2[0].y+10);
+    readparams2.p = planeBreak2;
+    readparams2.firepoint=firepoint2;
+    readparams2.c= cDestroy;
+    readparams2.pivot = pivot2;
+
+    setPoint(&pivot3, planeBreak3[0].x+10, planeBreak3[0].y);
+    readparams3.p = planeBreak3;
+    readparams3.firepoint=firepoint3;
+    readparams3.c= cDestroy;
+    readparams3.pivot = pivot3;
+
+    pthread_t thrfd1, thrfd2, thrfd3;
+    ret = pthread_create(&thrfd1, NULL, fallSpin, &readparams1);
+	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams2);
+	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams3);
+
+	if (!ret) {
+		pthread_join(thrfd1, NULL);
+		pthread_join(thrfd2, NULL);
+		pthread_join(thrfd3, NULL);
+	}*/
 }
 
 void printSquare (int edge, int loc_x, int loc_y, Color C) {
@@ -436,14 +656,8 @@ void* drawPlane() {
 	Color cDestroy;
 	setColor(&cDestroy, 255, 255, 255);
 	int i;
-	Point* planeBreak1;
-	Point* planeBreak2;
-	Point* planeBreak3;
 	Point temp, temp1, temp2;
 	Point circle, circle1;
-	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
-	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
-	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
     Color c, cDel;
     setColor(&c, 255, 0, 0);
     Point* plane;
@@ -894,7 +1108,6 @@ int main() {
     pthread_join(thrPlane, NULL);
     pthread_cancel(thrLasergun);
     clearScreen(&bg);
-    //drawFallingWheels(p);
     pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
     pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
     pthread_join(thrFallWheel, NULL);
