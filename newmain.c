@@ -392,8 +392,8 @@ Point spinDegree(Point p, int degree) {
 	Point pTemp;
 	double PI = 3.14159265;
 	double degInRad = degree*PI/180;
-	pTemp.x = p.x*cos(degInRad)-p.y*sin(degInRad);
-	pTemp.y = p.x*sin(degInRad)+p.y*cos(degInRad);
+	pTemp.x = ceil(p.x*cos(degInRad)-p.y*sin(degInRad));
+	pTemp.y = ceil(p.x*sin(degInRad)+p.y*cos(degInRad));
 	return pTemp;
 }
 void* fallSpin(void *params) {
@@ -494,6 +494,180 @@ void* fallSpin(void *params) {
 	}
 }
 
+void* fallRightSpin(void *params) {
+    //Thread procedure untuk menjatuhkan sambil memutaint i, j;
+
+    int i;
+    Point pTemp;
+    Color cc;
+    setColor(&cc, 255, 0, 0);
+    struct readFallSpinParams *readparams = params;
+    int minY = readparams->p[0].y;
+    int maxY = readparams->p[0].y;
+    int minX = readparams->p[0].x;
+    int maxX = readparams->p[0].x;
+
+    //cari titik terbawah dan teratas
+    for (i=1; i<4; i++) {
+        if (readparams->p[i].y<minY)
+            minY = readparams->p[i].y;
+        if (readparams->p[i].y>maxY)
+            maxY = readparams->p[i].y;
+    }
+
+    //cari titik terkiri dan terkanan
+    for (i=1; i<4; i++) {
+        if (readparams->p[i].x > maxX)
+            maxX = readparams->p[i].x;
+        if (readparams->p[i].x < minX)
+            minX = readparams->p[i].x;
+    }
+
+    while (maxY < vinfo.yres-40) {
+        //hapus
+        //solidFill(&readparams->firepoint, bg);
+        clearFill(&readparams->firepoint, readparams->c);
+
+        for (i=0; i<3; i++) {
+            drawLine(&readparams->p[i], &readparams->p[i + 1], &bg);
+        }
+        drawLine(&readparams->p[3], &readparams->p[0], &bg);        
+        //clearScreen(&bg)
+        
+        //gambar ulang dengan memutar
+        //kembalikan ke titik 0
+        for (i=0; i<4; i++) {
+            setPoint(&readparams->p[i], readparams->p[i].x-readparams->pivot.x, readparams->p[i].y-readparams->pivot.y);
+        }
+        setPoint(&readparams->firepoint, readparams->firepoint.x-readparams->pivot.x, readparams->firepoint.y-readparams->pivot.y);
+
+        //putar 45 derajat dan turunkan sekian piksel
+        for (i=0; i<4; i++) {
+            pTemp = spinDegree(readparams->p[i], 37);
+            setPoint(&readparams->p[i], pTemp.x+10, pTemp.y+10);
+        }
+        //putar firepoint dan turunkan sekian piksel
+        pTemp = spinDegree(readparams->firepoint, 37);
+        setPoint(&readparams->firepoint, pTemp.x+10, pTemp.y+10);
+
+        //kembalikan ke titik asal
+        for (i=0; i<4; i++) {
+            setPoint(&readparams->p[i], readparams->p[i].x+readparams->pivot.x, readparams->p[i].y+readparams->pivot.y);
+        }
+        setPoint(&readparams->firepoint, readparams->firepoint.x+readparams->pivot.x, readparams->firepoint.y+readparams->pivot.y);
+        
+        //turunkan pivot
+        setPoint(&readparams->pivot, readparams->pivot.x+10, readparams->pivot.y+10);
+
+        //cari titik terbawah
+        int maxY = readparams->p[0].y;
+        for (i=1; i<4; i++) {
+            if (readparams->p[i].y>maxY)
+                maxY = readparams->p[i].y;
+        }
+
+        if (maxY < vinfo.yres - 40) {
+        //gambar ulang
+            for (i=0; i<3; i++) {
+                drawLine(&readparams->p[i], &readparams->p[i + 1], &readparams->c);
+            }
+            drawLine(&readparams->p[3], &readparams->p[0], &readparams->c);
+            //warnai ulang
+            solidFill(&readparams->firepoint,  readparams->c);
+        } else {
+            sleep(2);
+            break;
+        }
+        usleep(100000);
+    }
+}
+
+void* fallLeftSpin(void *params) {
+    //Thread procedure untuk menjatuhkan sambil memutaint i, j;
+
+    int i;
+    Point pTemp;
+    Color cc;
+    setColor(&cc, 255, 0, 0);
+    struct readFallSpinParams *readparams = params;
+    int minY = readparams->p[0].y;
+    int maxY = readparams->p[0].y;
+    int minX = readparams->p[0].x;
+    int maxX = readparams->p[0].x;
+
+    //cari titik terbawah dan teratas
+    for (i=1; i<4; i++) {
+        if (readparams->p[i].y<minY)
+            minY = readparams->p[i].y;
+        if (readparams->p[i].y>maxY)
+            maxY = readparams->p[i].y;
+    }
+
+    //cari titik terkiri dan terkanan
+    for (i=1; i<4; i++) {
+        if (readparams->p[i].x > maxX)
+            maxX = readparams->p[i].x;
+        if (readparams->p[i].x < minX)
+            minX = readparams->p[i].x;
+    }
+
+    while (maxY < vinfo.yres-40) {
+        //hapus
+        //solidFill(&readparams->firepoint, bg);
+        clearFill(&readparams->firepoint, readparams->c);
+
+        for (i=0; i<3; i++) {
+            drawLine(&readparams->p[i], &readparams->p[i + 1], &bg);
+        }
+        drawLine(&readparams->p[3], &readparams->p[0], &bg);        
+        
+        //gambar ulang dengan memutar
+        //kembalikan ke titik 0
+        for (i=0; i<4; i++) {
+            setPoint(&readparams->p[i], readparams->p[i].x-readparams->pivot.x, readparams->p[i].y-readparams->pivot.y);
+        }
+        setPoint(&readparams->firepoint, readparams->firepoint.x-readparams->pivot.x, readparams->firepoint.y-readparams->pivot.y);
+
+        //putar 45 derajat dan turunkan sekian piksel
+        for (i=0; i<4; i++) {
+            pTemp = spinDegree(readparams->p[i], 45);
+            setPoint(&readparams->p[i], pTemp.x-10, pTemp.y+10);
+        }
+        //putar firepoint dan turunkan sekian piksel
+        pTemp = spinDegree(readparams->firepoint, 45);
+        setPoint(&readparams->firepoint, pTemp.x-10, pTemp.y+10);
+
+        //kembalikan ke titik asal
+        for (i=0; i<4; i++) {
+            setPoint(&readparams->p[i], readparams->p[i].x+readparams->pivot.x, readparams->p[i].y+readparams->pivot.y);
+        }
+        setPoint(&readparams->firepoint, readparams->firepoint.x+readparams->pivot.x, readparams->firepoint.y+readparams->pivot.y);
+        
+        //turunkan pivot
+        setPoint(&readparams->pivot, readparams->pivot.x-10, readparams->pivot.y+10);
+        
+        //cari titik terbawah
+        int maxY = readparams->p[0].y;
+        for (i=1; i<4; i++) {
+            if (readparams->p[i].y>maxY)
+                maxY = readparams->p[i].y;
+        }
+
+        if (maxY < vinfo.yres - 40) {
+        //gambar ulang
+            for (i=0; i<3; i++) {
+                drawLine(&readparams->p[i], &readparams->p[i + 1], &readparams->c);
+            }
+            drawLine(&readparams->p[3], &readparams->p[0], &readparams->c);
+            //warnai ulang
+            solidFill(&readparams->firepoint,  readparams->c);
+        } else {
+            sleep(2);
+            break;
+        }
+        usleep(100000);
+    }
+}
 
 void printSquare (int edge, int loc_x, int loc_y, Color C) {
     long int location;
@@ -833,9 +1007,9 @@ void drawPlaneBreak(Point* plane) {
     pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
     pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
     usleep(400000);
-    pthread_create(&thrfd1, NULL, fallSpin, &readparams1);
+    pthread_create(&thrfd1, NULL, fallLeftSpin, &readparams1);
 	pthread_create(&thrfd2, NULL, fallSpin, &readparams2);
-	pthread_create(&thrfd3, NULL, fallSpin, &readparams3);
+	pthread_create(&thrfd3, NULL, fallRightSpin, &readparams3);
     
 	// if (!ret) {
 		pthread_join(thrfd1, NULL);
