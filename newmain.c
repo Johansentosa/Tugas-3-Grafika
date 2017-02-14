@@ -396,6 +396,18 @@ Point spinDegree(Point p, int degree) {
 	pTemp.y = ceil(p.x*sin(degInRad)+p.y*cos(degInRad));
 	return pTemp;
 }
+
+void spinDegreeUsingCenter(Point *p, int degree, Point center) {
+	int i;
+	Point pTemp;
+	double PI = 3.14159265;
+	double degInRad = degree*PI/180;
+	pTemp.x = ceil(((*p).x-center.x)*cos(degInRad)-((*p).y-center.y)*sin(degInRad) + center.x);
+	pTemp.y = ceil(((*p).x-center.x)*sin(degInRad)+((*p).y-center.y)*cos(degInRad) + center.y);
+	(*p).x = pTemp.x;
+	(*p).y = pTemp.y;
+}
+
 void* fallSpin(void *params) {
 	//Thread procedure untuk menjatuhkan sambil memutaint i, j;
 
@@ -734,6 +746,13 @@ void drawCircle (int radius, Point P, int W, Color C) {
 
         plot8pixel(P, p, q, W, C);
     }
+}
+
+void drawSolidCircle (int radius, Point P, int W, Color C){
+	Point center; setPoint(&center,P.x+radius/2,P.y + radius/2);
+	drawCircle(radius,P,W,C);
+	solidFill(&center,C);
+	
 }
 
 void drawCircleProjectory(Point start, Point finish, int deltax, int deltay, int p){
@@ -1126,6 +1145,47 @@ void* drawPlane() {
     }
 }
 
+void drawPeopleWhitParachute(Point initialPosition) {
+	Point temp;
+	Color faceColor; setColor(&faceColor, 0, 255, 0);
+	drawSolidCircle(20,initialPosition,2,faceColor);
+	setPoint(&temp,initialPosition.x, initialPosition.y+22); // body
+	drawBox(temp,4,50,faceColor,0);
+	setPoint(&temp,temp.x, temp.y+50); //waist
+	drawBox(temp,4,20,faceColor,30);
+	drawBox(temp,4,20,faceColor,-30);
+	setPoint(&temp,temp.x+10,temp.y+17); // right foot
+	drawBox(temp,4,20,faceColor,0);
+	setPoint(&temp,temp.x-19,temp.y); // right foot
+	drawBox(temp,4,20,faceColor,0);
+	setPoint(&temp,initialPosition.x, initialPosition.y+35); //arm
+	drawBox(temp,4,20,faceColor,100);
+	drawBox(temp,4,20,faceColor,-100);
+	setPoint(&temp,temp.x+20, temp.y-5); //right hand
+	drawBox(temp,4,30,faceColor,-150);
+	setPoint(&temp,temp.x-38, temp.y+1); //left hand
+	drawBox(temp,4,30,faceColor,150);
+}
+
+void drawBox(Point position, int width, int height, Color c, int Degree) {
+	Point* box;
+    Point boxFirePoint, temp;
+    box = (Point*) malloc(4*sizeof(Point));
+    int i;
+    
+    setPoint(&box[0], position.x, position.y);
+    setPoint(&box[1], position.x + width, position.y);
+    setPoint(&box[2], position.x + width, position.y + height);
+    setPoint(&box[3], position.x, position.y + height);
+    for(i = 0; i < 3; i++) {
+        spinDegreeUsingCenter(&box[i+1],Degree,box[0]);
+        drawLine(&box[i], &box[i + 1], &c);
+    }
+    drawLine(&box[0], &box[i], &c);
+    setPoint(&boxFirePoint, (box[0].x+box[2].x)/2, (box[0].y+box[2].y)/2);
+    solidFill(&boxFirePoint, c);
+}
+
 void drawBoxgun() {
 	Point* box;
     Point boxFirePoint;
@@ -1300,6 +1360,8 @@ int main() {
     setColor(&bg, 0, 0, 255);
     connectBuffer();
     clearScreen(&bg);
+    Point P; setPoint(&P,300,400);
+    drawPeopleWhitParachute(P);
     pthread_t thrPlane, thrLasergun, thrBeam, thrFallWheel, thrFallWheel2;
     pthread_create(&thrPlane, NULL, drawPlane, "thrPlane");
     pthread_create(&thrLasergun, NULL, drawLasergun, "thrLasergun");
