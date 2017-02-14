@@ -829,21 +829,21 @@ void drawPlaneBreak(Point* plane) {
     readparams3.pivot = pivot3;
 
     pthread_t thrfd1, thrfd2, thrfd3, thrFallWheel, thrFallWheel2;
-    ret *= pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
-    ret *= pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
+    // ret *= pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
+    pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
+    pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
     usleep(400000);
-    ret = pthread_create(&thrfd1, NULL, fallSpin, &readparams1);
-	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams2);
-	ret *= pthread_create(&thrfd1, NULL, fallSpin, &readparams3);
-	
+    pthread_create(&thrfd1, NULL, fallSpin, &readparams1);
+	pthread_create(&thrfd2, NULL, fallSpin, &readparams2);
+	pthread_create(&thrfd3, NULL, fallSpin, &readparams3);
     
-	if (!ret) {
+	// if (!ret) {
 		pthread_join(thrfd1, NULL);
 		pthread_join(thrfd2, NULL);
 		pthread_join(thrfd3, NULL);
 		pthread_join(thrFallWheel, NULL);
     	pthread_join(thrFallWheel2, NULL);
-	}
+	// }
 
 }
 
@@ -873,7 +873,7 @@ void* drawPlane() {
             	//drawBoxgun();
                 //Buat poligon tertembak
                 drawPlaneBreak(plane);
-                sleep(2);
+                sleep(1);
                 break;
             } else { // masih terbang
             	// hapus
