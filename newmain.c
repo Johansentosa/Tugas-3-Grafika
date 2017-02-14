@@ -557,7 +557,7 @@ void* fallRightSpin(void *params) {
         setPoint(&readparams->firepoint, readparams->firepoint.x+readparams->pivot.x, readparams->firepoint.y+readparams->pivot.y);
         
         //turunkan pivot
-        setPoint(&readparams->pivot, readparams->pivot.x+10, readparams->pivot.y+10);
+        setPoint(&readparams->pivot, (readparams->pivot.x+10)%vinfo.yres, readparams->pivot.y+10);
 
         //cari titik terbawah
         int maxY = readparams->p[0].y;
@@ -644,7 +644,7 @@ void* fallLeftSpin(void *params) {
         setPoint(&readparams->firepoint, readparams->firepoint.x+readparams->pivot.x, readparams->firepoint.y+readparams->pivot.y);
         
         //turunkan pivot
-        setPoint(&readparams->pivot, readparams->pivot.x-10, readparams->pivot.y+10);
+        setPoint(&readparams->pivot, (readparams->pivot.x-10)%vinfo.xres, readparams->pivot.y+10);
         
         //cari titik terbawah
         int maxY = readparams->p[0].y;
