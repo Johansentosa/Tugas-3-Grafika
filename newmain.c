@@ -1308,7 +1308,7 @@ void drawPeopleWithParachute(Point initialPosition) {
 
 void peopleFall(Point p){
 	Point temp; setPoint(&temp,p.x,p.y);
-	while (temp.y < (vinfo.yres - 300)) {
+	while (temp.y < (vinfo.yres - 120)) {
 		drawPeopleWithParachute(temp);
 		usleep(20000);
 		printSquare(300,temp.x-150,temp.y-180,bg);
