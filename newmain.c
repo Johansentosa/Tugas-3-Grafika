@@ -979,210 +979,6 @@ void * drawFallingWheels(void * p22){
 	}
 }
 
-void drawPlaneBreak(Point* plane) {
-	Color cDestroy;
-	setColor(&cDestroy, 255, 255, 0);
-	int i, j, ret;
-	Point* planeBreak1;
-	Point* planeBreak2;
-	Point* planeBreak3;
-	Point firepoint1, firepoint2, firepoint3;
-	Point pivot1, pivot2, pivot3;
-	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
-	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
-	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
-
-	//Buat bagian plane 1
-	setPoint(&planeBreak1[0], plane[0].x, plane[0].y);
-	setPoint(&planeBreak1[1], plane[1].x, plane[1].y);
-	setPoint(&planeBreak1[2], plane[1].x+50, plane[2].y);
-	setPoint(&planeBreak1[3], plane[0].x+100, plane[0].y);
-	for(i = 0; i < 3; i++) {
-        drawLine(&planeBreak1[i], &planeBreak1[i + 1], &cDestroy);
-    }
-    drawLine(&planeBreak1[3], &planeBreak1[0], &cDestroy);
-    //Warnai
-    setPoint(&firepoint1, planeBreak1[1].x, planeBreak1[1].y+20);
-    solidFill(&firepoint1, cDestroy);
-
-	//Buat bagian plane 2
-	setPoint(&planeBreak2[0], planeBreak1[2].x+50, planeBreak1[2].y);
-	setPoint(&planeBreak2[1], plane[2].x+50, plane[2].y);
-	setPoint(&planeBreak2[2], plane[5].x+50, plane[5].y);
-	setPoint(&planeBreak2[3], planeBreak1[3].x+50, planeBreak1[3].y);
-	for(i = 0; i < 3; i++) {
-        drawLine(&planeBreak2[i], &planeBreak2[i + 1], &cDestroy);
-    }
-    drawLine(&planeBreak2[3], &planeBreak2[0], &cDestroy);
-    //Warnai
-    setPoint(&firepoint2, planeBreak2[0].x+50, planeBreak2[0].y+20);
-    solidFill(&firepoint2, cDestroy);
-    
-
-    //Buat bagian plane 3
-	setPoint(&planeBreak3[0], planeBreak2[1].x+50, planeBreak2[1].y);
-	setPoint(&planeBreak3[1], plane[3].x+100, plane[3].y);
-	setPoint(&planeBreak3[2], plane[4].x+100, plane[4].y);
-	setPoint(&planeBreak3[3], planeBreak2[2].x+50, planeBreak2[2].y);
-	for(i = 0; i < 3; i++) {
-        drawLine(&planeBreak3[i], &planeBreak3[i + 1], &cDestroy);
-    }
-    drawLine(&planeBreak3[3], &planeBreak3[0], &cDestroy);
-    //Warnai
-    setPoint(&firepoint3, planeBreak3[0].x+10, planeBreak3[0].y);
-    solidFill(&firepoint3, cDestroy);
-    usleep(400000);
-    clearFill(&firepoint1, cDestroy);
-    clearFill(&firepoint2, cDestroy);
-    clearFill(&firepoint3, cDestroy);
-
-    //Jatuhkan
-    struct readFallSpinParams readparams1;
-    struct readFallSpinParams readparams2;
-    struct readFallSpinParams readparams3;
-    
-    setPoint(&pivot1, planeBreak1[0].x+20, planeBreak1[0].y-10);
-    readparams1.p = planeBreak1;
-    readparams1.firepoint=firepoint1;
-    readparams1.c= cDestroy;
-    readparams1.pivot = pivot1;
-
-    setPoint(&pivot2, planeBreak2[0].x+10, planeBreak2[0].y+10);
-    readparams2.p = planeBreak2;
-    readparams2.firepoint=firepoint2;
-    readparams2.c= cDestroy;
-    readparams2.pivot = pivot2;
-
-    setPoint(&pivot3, planeBreak3[0].x+10, planeBreak3[0].y);
-    readparams3.p = planeBreak3;
-    readparams3.firepoint=firepoint3;
-    readparams3.c= cDestroy;
-    readparams3.pivot = pivot3;
-
-    pthread_t thrfd1, thrfd2, thrfd3, thrFallWheel, thrFallWheel2;
-    // ret *= pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
-    pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
-    pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
-    usleep(400000);
-    pthread_create(&thrfd1, NULL, fallLeftSpin, &readparams1);
-	pthread_create(&thrfd2, NULL, fallSpin, &readparams2);
-	pthread_create(&thrfd3, NULL, fallRightSpin, &readparams3);
-    
-	// if (!ret) {
-		pthread_join(thrfd1, NULL);
-		pthread_join(thrfd2, NULL);
-		pthread_join(thrfd3, NULL);
-		//pthread_join(thrFallWheel, NULL);
-    	//pthread_join(thrFallWheel2, NULL);
-	// }
-
-}
-
-
-void* drawPlane() {
-	Color cDestroy;
-	setColor(&cDestroy, 255, 255, 255);
-	int i;
-	Point temp, temp1, temp2;
-	Point circle, circle1;
-    Color c, cDel;
-    setColor(&c, 255, 0, 0);
-    Point* plane;
-    plane = (Point*) malloc(6 * sizeof(Point));
-    int lengthPlane = 260; // panjang pesawat dari head sampai tail
-    tailPlane = vinfo.xres;
-    headPlane = tailPlane - lengthPlane;
-   
-    int j;
-    Point* sayap;
-
-    sayap = (Point*) malloc(4* sizeof(Point));
-    while (!kaboom) { // selama pesawat belum ketembak
-        while (headPlane > 0) { // selama pesawat belum mentok di kiri
-            if (kaboom) { // pesawat kena tembak
-            	clearScreen(&bg);
-            	//drawBoxgun();
-                //Buat poligon tertembak
-                drawPlaneBreak(plane);
-                sleep(1);
-                break;
-            } else { // masih terbang
-            	// hapus
-            	circle.x = headPlane+40;
-				circle.y = 90;
-				circle1.x = headPlane+140;
-				circle1.y = 90;
-                for(j = 0; j < 5; j++) {
-                    drawLine(&plane[j], &plane[j + 1], &bg);
-                }
-               // drawCircle(12, circle, 2, bg);
-                drawLine(&plane[5], &plane[0], &bg);
-                
-
-                //bikin sayap
-                setPoint(&sayap[0], headPlane+60, 70);
-                setPoint(&sayap[1], headPlane+100, 10);
-                setPoint(&sayap[2], headPlane+130, 10);
-                setPoint(&sayap[3], headPlane+90, 70);
-                for(j = 0; j < 3; j++) {
-                    drawLine(&sayap[j], &sayap[j + 1], &c);
-                }               
-                drawLine(&sayap[3], &sayap[0], &c);
-                setPoint(&temp, sayap[1].x, sayap[1].y+20);
-                solidFill(&temp, c);
-
-                setPoint(&plane[0], headPlane, 90);
-                setPoint(&plane[1], headPlane + 40, 50);
-                setPoint(&plane[2], headPlane + 190, 50);
-                setPoint(&plane[3], headPlane + 220, 20);
-                setPoint(&plane[4], headPlane + 260, 20);
-                setPoint(&plane[5], headPlane + 190, 90);
-                // gambar
-                
-                for(j = 0; j < 5; j++) {
-                    drawLine(&plane[j], &plane[j + 1], &c);
-                    
-                }
-                drawCircle(12, circle, 2, c);
-                drawCircle(13, circle, 2, bg);
-                drawCircle(12, circle1, 2, c);
-                drawCircle(13, circle1, 2, bg);
-                roda1 = circle;
-                roda2 = circle1;
-                drawLine(&plane[5], &plane[0], &c);
-                
-				//circle.x = 90 + 260;
-				//circle.y = 100 + 3;
-				
-                // Warnai
-                setPoint(&temp2, plane[1].x, 60);
-                solidFill(&temp2, c);
-                setPoint(&temp, plane[3].x, 30);
-                solidFill(&temp, c);
-                //maenin usleepnya aja, 50000 lmyn ga kedip tp lama -abe1.0
-                usleep(20000);
-                solidFillReverse(&temp, c);
-                solidFillReverse(&temp2, c);
-
-                headPlane--;
-                tailPlane--;
-            }
-        }
-        for(int x=0; x<vinfo.xres; x++){
-			for(int y=0; y<vinfo.yres/3; y++){
-				long location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
-				*(fbp + location) =0;
-				*(fbp + location +1) = 0;
-				*(fbp + location +2) = 0;
-				*(fbp + location + 3) = 0;
-			}
-		}
-        tailPlane = vinfo.xres; // restart dari ujung kanan lagi
-        headPlane = tailPlane - lengthPlane;
-        //tes
-    }
-}
-
 void drawBox(Point position, int width, int height, Color c, int Degree) {
 	Point* box;
     Point boxFirePoint, temp;
@@ -1384,6 +1180,210 @@ void* drawBeam() {
         }
     }
 }
+void drawPlaneBreak(Point* plane) {
+	Color cDestroy;
+	setColor(&cDestroy, 255, 255, 0);
+	int i, j, ret;
+	Point* planeBreak1;
+	Point* planeBreak2;
+	Point* planeBreak3;
+	Point firepoint1, firepoint2, firepoint3;
+	Point pivot1, pivot2, pivot3;
+	planeBreak1 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak2 = (Point*) malloc (4 * sizeof(Point));
+	planeBreak3 = (Point*) malloc (4 * sizeof(Point));
+
+	//Buat bagian plane 1
+	setPoint(&planeBreak1[0], plane[0].x, plane[0].y);
+	setPoint(&planeBreak1[1], plane[1].x, plane[1].y);
+	setPoint(&planeBreak1[2], plane[1].x+50, plane[2].y);
+	setPoint(&planeBreak1[3], plane[0].x+100, plane[0].y);
+	for(i = 0; i < 3; i++) {
+        drawLine(&planeBreak1[i], &planeBreak1[i + 1], &cDestroy);
+    }
+    drawLine(&planeBreak1[3], &planeBreak1[0], &cDestroy);
+    //Warnai
+    setPoint(&firepoint1, planeBreak1[1].x, planeBreak1[1].y+20);
+    solidFill(&firepoint1, cDestroy);
+
+	//Buat bagian plane 2
+	setPoint(&planeBreak2[0], planeBreak1[2].x+50, planeBreak1[2].y);
+	setPoint(&planeBreak2[1], plane[2].x+50, plane[2].y);
+	setPoint(&planeBreak2[2], plane[5].x+50, plane[5].y);
+	setPoint(&planeBreak2[3], planeBreak1[3].x+50, planeBreak1[3].y);
+	for(i = 0; i < 3; i++) {
+        drawLine(&planeBreak2[i], &planeBreak2[i + 1], &cDestroy);
+    }
+    drawLine(&planeBreak2[3], &planeBreak2[0], &cDestroy);
+    //Warnai
+    setPoint(&firepoint2, planeBreak2[0].x+50, planeBreak2[0].y+20);
+    solidFill(&firepoint2, cDestroy);
+    
+
+    //Buat bagian plane 3
+	setPoint(&planeBreak3[0], planeBreak2[1].x+50, planeBreak2[1].y);
+	setPoint(&planeBreak3[1], plane[3].x+100, plane[3].y);
+	setPoint(&planeBreak3[2], plane[4].x+100, plane[4].y);
+	setPoint(&planeBreak3[3], planeBreak2[2].x+50, planeBreak2[2].y);
+	for(i = 0; i < 3; i++) {
+        drawLine(&planeBreak3[i], &planeBreak3[i + 1], &cDestroy);
+    }
+    drawLine(&planeBreak3[3], &planeBreak3[0], &cDestroy);
+    //Warnai
+    setPoint(&firepoint3, planeBreak3[0].x+10, planeBreak3[0].y);
+    solidFill(&firepoint3, cDestroy);
+    usleep(400000);
+    clearFill(&firepoint1, cDestroy);
+    clearFill(&firepoint2, cDestroy);
+    clearFill(&firepoint3, cDestroy);
+
+    //Jatuhkan
+    struct readFallSpinParams readparams1;
+    struct readFallSpinParams readparams2;
+    struct readFallSpinParams readparams3;
+    
+    setPoint(&pivot1, planeBreak1[0].x+20, planeBreak1[0].y-10);
+    readparams1.p = planeBreak1;
+    readparams1.firepoint=firepoint1;
+    readparams1.c= cDestroy;
+    readparams1.pivot = pivot1;
+
+    setPoint(&pivot2, planeBreak2[0].x+10, planeBreak2[0].y+10);
+    readparams2.p = planeBreak2;
+    readparams2.firepoint=firepoint2;
+    readparams2.c= cDestroy;
+    readparams2.pivot = pivot2;
+
+    setPoint(&pivot3, planeBreak3[0].x+10, planeBreak3[0].y);
+    readparams3.p = planeBreak3;
+    readparams3.firepoint=firepoint3;
+    readparams3.c= cDestroy;
+    readparams3.pivot = pivot3;
+
+    pthread_t thrfd1, thrfd2, thrfd3, thrFallWheel, thrFallWheel2, thrPeopleFall;
+    // ret *= pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
+    pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
+    pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
+    usleep(400000);
+    pthread_create(&thrfd1, NULL, fallLeftSpin, &readparams1);
+	pthread_create(&thrfd2, NULL, fallSpin, &readparams2);
+	pthread_create(&thrfd3, NULL, fallRightSpin, &readparams3);
+	pthread_create(&thrPeopleFall, NULL, peopleFall, &roda2);
+    pthread_join(thrPeopleFall, NULL);
+    
+	// if (!ret) {
+		pthread_join(thrfd1, NULL);
+		pthread_join(thrfd2, NULL);
+		pthread_join(thrfd3, NULL);
+		pthread_join(thrFallWheel, NULL);
+    	pthread_join(thrFallWheel2, NULL);
+	// }
+
+}
+
+void* drawPlane() {
+	Color cDestroy;
+	setColor(&cDestroy, 255, 255, 255);
+	int i;
+	Point temp, temp1, temp2;
+	Point circle, circle1;
+    Color c, cDel;
+    setColor(&c, 255, 0, 0);
+    Point* plane;
+    plane = (Point*) malloc(6 * sizeof(Point));
+    int lengthPlane = 260; // panjang pesawat dari head sampai tail
+    tailPlane = vinfo.xres;
+    headPlane = tailPlane - lengthPlane;
+   
+    int j;
+    Point* sayap;
+
+    sayap = (Point*) malloc(4* sizeof(Point));
+    while (!kaboom) { // selama pesawat belum ketembak
+        while (headPlane > 0) { // selama pesawat belum mentok di kiri
+            if (kaboom) { // pesawat kena tembak
+            	clearScreen(&bg);
+            	//drawBoxgun();
+                //Buat poligon tertembak
+                drawPlaneBreak(plane);
+                sleep(1);
+                break;
+            } else { // masih terbang
+            	// hapus
+            	circle.x = headPlane+40;
+				circle.y = 90;
+				circle1.x = headPlane+140;
+				circle1.y = 90;
+                for(j = 0; j < 5; j++) {
+                    drawLine(&plane[j], &plane[j + 1], &bg);
+                }
+               // drawCircle(12, circle, 2, bg);
+                drawLine(&plane[5], &plane[0], &bg);
+                
+
+                //bikin sayap
+                setPoint(&sayap[0], headPlane+60, 70);
+                setPoint(&sayap[1], headPlane+100, 10);
+                setPoint(&sayap[2], headPlane+130, 10);
+                setPoint(&sayap[3], headPlane+90, 70);
+                for(j = 0; j < 3; j++) {
+                    drawLine(&sayap[j], &sayap[j + 1], &c);
+                }               
+                drawLine(&sayap[3], &sayap[0], &c);
+                setPoint(&temp, sayap[1].x, sayap[1].y+20);
+                solidFill(&temp, c);
+
+                setPoint(&plane[0], headPlane, 90);
+                setPoint(&plane[1], headPlane + 40, 50);
+                setPoint(&plane[2], headPlane + 190, 50);
+                setPoint(&plane[3], headPlane + 220, 20);
+                setPoint(&plane[4], headPlane + 260, 20);
+                setPoint(&plane[5], headPlane + 190, 90);
+                // gambar
+                
+                for(j = 0; j < 5; j++) {
+                    drawLine(&plane[j], &plane[j + 1], &c);
+                    
+                }
+                drawCircle(12, circle, 2, c);
+                drawCircle(13, circle, 2, bg);
+                drawCircle(12, circle1, 2, c);
+                drawCircle(13, circle1, 2, bg);
+                roda1 = circle;
+                roda2 = circle1;
+                drawLine(&plane[5], &plane[0], &c);
+                
+				//circle.x = 90 + 260;
+				//circle.y = 100 + 3;
+				
+                // Warnai
+                setPoint(&temp2, plane[1].x, 60);
+                solidFill(&temp2, c);
+                setPoint(&temp, plane[3].x, 30);
+                solidFill(&temp, c);
+                //maenin usleepnya aja, 50000 lmyn ga kedip tp lama -abe1.0
+                usleep(20000);
+                solidFillReverse(&temp, c);
+                solidFillReverse(&temp2, c);
+
+                headPlane--;
+                tailPlane--;
+            }
+        }
+        for(int x=0; x<vinfo.xres; x++){
+			for(int y=0; y<vinfo.yres/3; y++){
+				long location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
+				*(fbp + location) =0;
+				*(fbp + location +1) = 0;
+				*(fbp + location +2) = 0;
+				*(fbp + location + 3) = 0;
+			}
+		}
+        tailPlane = vinfo.xres; // restart dari ujung kanan lagi
+        headPlane = tailPlane - lengthPlane;
+        //tes
+    }
+}
 
 void connectBuffer() {
     // Open the file for reading and writing
@@ -1428,8 +1428,6 @@ int main() {
     pthread_join(thrPlane, NULL);
     pthread_cancel(thrLasergun);
     clearScreen(&bg);
-    pthread_create(&thrPeopleFall, NULL, peopleFall, &roda2);
-    pthread_join(thrPeopleFall, NULL);
     munmap(fbp, screensize);
     close(fbfd);
     return 0;
