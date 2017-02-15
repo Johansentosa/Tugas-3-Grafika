@@ -1104,8 +1104,8 @@ void drawPeopleWithParachute(Point initialPosition) {
 
 void * peopleFall(void * p22){
 	Point * p = (Point *) p22;
-	Point temp; setPoint(&temp,p->x,p->y);
-	while (temp.y < (vinfo.yres - 120)) {
+	Point temp; setPoint(&temp,p->x,p->y+200);
+	while (temp.y < (vinfo.yres - 200)) {
 		drawPeopleWithParachute(temp);
 		usleep(20000);
 		printSquare(300,temp.x-150,temp.y-180,bg);
@@ -1268,8 +1268,10 @@ void drawPlaneBreak(Point* plane) {
     pthread_create(&thrfd1, NULL, fallLeftSpin, &readparams1);
 	pthread_create(&thrfd2, NULL, fallSpin, &readparams2);
 	pthread_create(&thrfd3, NULL, fallRightSpin, &readparams3);
-	pthread_create(&thrPeopleFall, NULL, peopleFall, &roda2);
-    pthread_join(thrPeopleFall, NULL);
+	usleep(2000000);
+	peopleFall(&roda2);
+	//pthread_create(&thrPeopleFall, NULL, peopleFall, &roda2);
+    //pthread_join(thrPeopleFall, NULL);
     
 	// if (!ret) {
 		pthread_join(thrfd1, NULL);
@@ -1418,8 +1420,6 @@ int main() {
     setColor(&bg, 0, 0, 255);
     connectBuffer();
     clearScreen(&bg);
-    /*Point P; setPoint(&P,300,300);
-    peopleFall(P);*/
     pthread_t thrPlane, thrLasergun, thrBeam, thrFallWheel, thrFallWheel2, thrPeopleFall;
     pthread_create(&thrPlane, NULL, drawPlane, "thrPlane");
     pthread_create(&thrLasergun, NULL, drawLasergun, "thrLasergun");
