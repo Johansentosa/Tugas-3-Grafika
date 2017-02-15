@@ -1183,46 +1183,6 @@ void* drawPlane() {
     }
 }
 
-void drawPeopleWithParachute(Point initialPosition) {
-	Point temp;
-	Color faceColor; setColor(&faceColor, 0, 255, 0);
-	Color black; setColor(&black, 0, 0, 0);
-	setPoint(&temp,initialPosition.x, initialPosition.y-50); //parachute
-	drawHalfSolidCircle(120,temp,1,faceColor);
-	drawSolidCircle(20,initialPosition,2,faceColor);
-	setPoint(&temp,initialPosition.x, initialPosition.y+22); // body
-	drawBox(temp,4,50,faceColor,0);
-	setPoint(&temp,temp.x, temp.y+50); //waist
-	drawBox(temp,4,20,faceColor,30);
-	drawBox(temp,4,20,faceColor,-30);
-	setPoint(&temp,temp.x+10,temp.y+17); // right foot
-	drawBox(temp,4,20,faceColor,0);
-	setPoint(&temp,temp.x-19,temp.y); // right foot
-	drawBox(temp,4,20,faceColor,0);
-	setPoint(&temp,initialPosition.x, initialPosition.y+35); //arm
-	drawBox(temp,4,20,faceColor,100);
-	drawBox(temp,4,20,faceColor,-100);
-	setPoint(&temp,temp.x+20, temp.y-5); //right hand
-	drawBox(temp,4,30,faceColor,-150);
-	setPoint(&temp,temp.x-38, temp.y+1); //left hand
-	drawBox(temp,4,30,faceColor,150);
-	setPoint(&temp,initialPosition.x, initialPosition.y+35); //parachute string
-	drawBox(temp,1,100,faceColor,148);
-	drawBox(temp,1,140,faceColor,127);
-	drawBox(temp,1,100,faceColor,-148);
-	drawBox(temp,1,140,faceColor,-127);
-}
-
-void peopleFall(Point p){
-	Point temp; setPoint(&temp,p.x,p.y);
-	while (temp.y < (vinfo.yres - 300)) {
-		drawPeopleWithParachute(temp);
-		usleep(2s0000);
-		printSquare(300,temp.x-150,temp.y-180,bg);
-		setPoint(&temp,temp.x,temp.y+5);
-	}
-}
-
 void drawBox(Point position, int width, int height, Color c, int Degree) {
 	Point* box;
     Point boxFirePoint, temp;
@@ -1316,6 +1276,45 @@ void* drawLasergun() {
     }
 }
 
+void drawPeopleWithParachute(Point initialPosition) {
+	Point temp;
+	Color faceColor; setColor(&faceColor, 0, 255, 0);
+	Color black; setColor(&black, 0, 0, 0);
+	setPoint(&temp,initialPosition.x, initialPosition.y-50); //parachute
+	drawHalfSolidCircle(120,temp,1,faceColor);
+	drawSolidCircle(20,initialPosition,2,faceColor);
+	setPoint(&temp,initialPosition.x, initialPosition.y+22); // body
+	drawBox(temp,4,50,faceColor,0);
+	setPoint(&temp,temp.x, temp.y+50); //waist
+	drawBox(temp,4,20,faceColor,30);
+	drawBox(temp,4,20,faceColor,-30);
+	setPoint(&temp,temp.x+10,temp.y+17); // right foot
+	drawBox(temp,4,20,faceColor,0);
+	setPoint(&temp,temp.x-19,temp.y); // right foot
+	drawBox(temp,4,20,faceColor,0);
+	setPoint(&temp,initialPosition.x, initialPosition.y+35); //arm
+	drawBox(temp,4,20,faceColor,100);
+	drawBox(temp,4,20,faceColor,-100);
+	setPoint(&temp,temp.x+20, temp.y-5); //right hand
+	drawBox(temp,4,30,faceColor,-150);
+	setPoint(&temp,temp.x-38, temp.y+1); //left hand
+	drawBox(temp,4,30,faceColor,150);
+	setPoint(&temp,initialPosition.x, initialPosition.y+35); //parachute string
+	drawBox(temp,1,100,faceColor,148);
+	drawBox(temp,1,140,faceColor,127);
+	drawBox(temp,1,100,faceColor,-148);
+	drawBox(temp,1,140,faceColor,-127);
+}
+
+void peopleFall(Point p){
+	Point temp; setPoint(&temp,p.x,p.y);
+	while (temp.y < (vinfo.yres - 300)) {
+		drawPeopleWithParachute(temp);
+		usleep(20000);
+		printSquare(300,temp.x-150,temp.y-180,bg);
+		setPoint(&temp,temp.x,temp.y+5);
+	}
+}
 
 int getAbsisInlineEquation(Point p1, Point p2, int ordinat) {
 
@@ -1420,6 +1419,7 @@ int main() {
     clearScreen(&bg);
     Point P; setPoint(&P,300,300);
     peopleFall(P);
+    /*
     pthread_t thrPlane, thrLasergun, thrBeam, thrFallWheel, thrFallWheel2;
     pthread_create(&thrPlane, NULL, drawPlane, "thrPlane");
     pthread_create(&thrLasergun, NULL, drawLasergun, "thrLasergun");
@@ -1428,6 +1428,10 @@ int main() {
     pthread_join(thrPlane, NULL);
     pthread_cancel(thrLasergun);
     clearScreen(&bg);
+    pthread_create(&thrFallWheel, NULL, drawFallingWheels, &roda1);
+    pthread_create(&thrFallWheel2, NULL, drawFallingWheels, &roda2);
+    pthread_join(thrFallWheel, NULL);
+    pthread_join(thrFallWheel2, NULL);*/
     munmap(fbp, screensize);
     close(fbfd);
     return 0;
