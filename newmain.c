@@ -724,6 +724,17 @@ void plot8pixel (Point P, int p, int q, int W, Color C) {
 }
 
 
+void plot4pixel (Point P, int p, int q, int W, Color C) {
+    //printSquare(W, P.x+p, P.y+q, C);
+    //printSquare(W, P.x-p, P.y+q, C);
+    printSquare(W, P.x+p, P.y-q, C);
+    printSquare(W, P.x-p, P.y-q, C);
+
+    //printSquare(W, P.x+q, P.y+p, C);
+    //printSquare(W, P.x-q, P.y+p, C);
+    printSquare(W, P.x+q, P.y-p, C);
+    printSquare(W, P.x-q, P.y-p, C);
+}
 
 void drawCircle (int radius, Point P, int W, Color C) {
     int d, p, q;
@@ -753,6 +764,33 @@ void drawSolidCircle (int radius, Point P, int W, Color C){
 	drawCircle(radius,P,W,C);
 	solidFill(&center,C);
 	
+}
+
+void drawHalfSolidCircle (int radius, Point P, int W, Color C){
+	int d, p, q;
+
+    p = 0;
+    q = radius;
+    d = 3 - 2*radius;
+
+    plot4pixel(P, p, q, W, C);
+    while (p < q) {
+        p++;
+        if (d<0) {
+            d = d + 4*p + 6;
+        }
+        else {
+            q--;
+            d = d + 4*(p-q) + 10;
+        }
+		plot4pixel(P, p, q, W, C);
+    }
+    Point p1; setPoint(&p1,P.x+W+radius,P.y);
+    Point p2; setPoint(&p2,P.x-W-radius,P.y);
+    drawLine(&p1,&p2,&C);
+    setPoint(&p1,P.x,P.y-radius/2);
+    drawLine(&p1,&p2,&C);
+    solidFill(&p1,C);
 }
 
 void drawCircleProjectory(Point start, Point finish, int deltax, int deltay, int p){
@@ -1145,9 +1183,12 @@ void* drawPlane() {
     }
 }
 
-void drawPeopleWhitParachute(Point initialPosition) {
+void drawPeopleWithParachute(Point initialPosition) {
 	Point temp;
 	Color faceColor; setColor(&faceColor, 0, 255, 0);
+	Color black; setColor(&black, 0, 0, 0);
+	setPoint(&temp,initialPosition.x, initialPosition.y-50); //parachute
+	drawHalfSolidCircle(120,temp,1,faceColor);
 	drawSolidCircle(20,initialPosition,2,faceColor);
 	setPoint(&temp,initialPosition.x, initialPosition.y+22); // body
 	drawBox(temp,4,50,faceColor,0);
@@ -1165,6 +1206,21 @@ void drawPeopleWhitParachute(Point initialPosition) {
 	drawBox(temp,4,30,faceColor,-150);
 	setPoint(&temp,temp.x-38, temp.y+1); //left hand
 	drawBox(temp,4,30,faceColor,150);
+	setPoint(&temp,initialPosition.x, initialPosition.y+35); //parachute string
+	drawBox(temp,1,100,faceColor,148);
+	drawBox(temp,1,140,faceColor,127);
+	drawBox(temp,1,100,faceColor,-148);
+	drawBox(temp,1,140,faceColor,-127);
+}
+
+void peopleFall(Point p){
+	Point temp; setPoint(&temp,p.x,p.y);
+	while (temp.y < (vinfo.yres - 300)) {
+		drawPeopleWithParachute(temp);
+		usleep(2s0000);
+		printSquare(300,temp.x-150,temp.y-180,bg);
+		setPoint(&temp,temp.x,temp.y+5);
+	}
 }
 
 void drawBox(Point position, int width, int height, Color c, int Degree) {
@@ -1182,8 +1238,10 @@ void drawBox(Point position, int width, int height, Color c, int Degree) {
         drawLine(&box[i], &box[i + 1], &c);
     }
     drawLine(&box[0], &box[i], &c);
-    setPoint(&boxFirePoint, (box[0].x+box[2].x)/2, (box[0].y+box[2].y)/2);
-    solidFill(&boxFirePoint, c);
+    if (width != 1) {
+		setPoint(&boxFirePoint, (box[0].x+box[2].x)/2, (box[0].y+box[2].y)/2);
+		solidFill(&boxFirePoint, c);
+	}
 }
 
 void drawBoxgun() {
@@ -1360,8 +1418,8 @@ int main() {
     setColor(&bg, 0, 0, 255);
     connectBuffer();
     clearScreen(&bg);
-    Point P; setPoint(&P,300,400);
-    drawPeopleWhitParachute(P);
+    Point P; setPoint(&P,300,300);
+    peopleFall(P);
     pthread_t thrPlane, thrLasergun, thrBeam, thrFallWheel, thrFallWheel2;
     pthread_create(&thrPlane, NULL, drawPlane, "thrPlane");
     pthread_create(&thrLasergun, NULL, drawLasergun, "thrLasergun");
