@@ -19,6 +19,29 @@ typedef struct Colors {
     int g;
     int b;
 } Color;
+
+typedef struct lines {
+	Point* p1;
+	Point* p2;
+} Line;
+
+typedef struct clipWindows {
+	double l; //batas kiri window, sb. x
+	double r; //batas kanan window, sb.x
+	double t; //batas atas window, sb. y
+	double b; //batas bawah window. sb. y
+} Clipwindow;
+
+typedef struct pointCodes {
+	//buat posisi garis thd clipwindow, didalem diluar apa terpotong clipwindow
+	//nilai 1 dan 0
+	int l;
+	int r;
+	int t;
+	int b;
+} Pointcode;
+
+
 struct fb_var_screeninfo vinfo;
 struct fb_fix_screeninfo finfo;
 
@@ -1416,12 +1439,64 @@ void connectBuffer() {
     }
 }
 
+void* drawWindow(int a, int b) {
+	Point* window;
+	int i;
+	window = (Point*) malloc(4*sizeof(Point));
+	Color cWindow;
+	setColor(&cWindow, 0, 255, 0);
+	
+	setPoint(&window[0], a, b);
+	setPoint(&window[1], a, 300);
+	setPoint(&window[2], 400, 300);
+	setPoint(&window[3], 400, b);
+	for(i = 0; i < 3; i++) {
+        drawLine(&window[i], &window[i + 1], &cWindow);
+    }
+    drawLine(&window[0], &window[i], &cWindow);
+}
+	
+void setPointCode (Point p, Clipwindow cw, Pointcode pc) {
+	//koordinat yg digunakan 0,0 jadi digeser dlu ke pojok atas kiri
+	if (p.x > cw.l) {
+		pc.l = 0;
+	} else {
+		pc.l = 1;
+	}
+	if (p.x < cw.r) {
+		pc.r = 0;
+	} else {
+		pc.r = 1;
+	} 
+	if (p.y < cw.b) {
+		pc.b = 0;
+	} else {
+		pc.b = 1;
+	}
+	if (p.y > cw.t) {
+		pc.t = 0;
+	} else {
+		pc.t = 1;
+	}
+}
+
+void logicLine (Pointcode pc1; Pointcode pc2; int linelogic) {
+	//linelogic = 0 maka visible, slain itu invisible
+	int logicbit[4];
+	
+	logicbit[0] = pc1.l && pc2.l;
+	logicbit[1] = pc1.r && pc2.r;
+	logicbit[2] = pc1.b && pc2.b;
+	logicbit[3] = pc1.t && pc2.t;
+	linelogic = logicbit[0] || logicbit[1] || logicbit[2] || logicbit[3];
+}
+	
 
 int main() {
     setColor(&bg, 0, 0, 255);
     connectBuffer();
     clearScreen(&bg);
-    pthread_t thrPlane, thrLasergun, thrBeam, thrFallWheel, thrFallWheel2, thrPeopleFall;
+    pthread_t thrPlane, thrLasergun, thrBeam, thrFallWheel, thrFallWheel2, thrPeopleFall, thrWindow;
     pthread_create(&thrPlane, NULL, drawPlane, "thrPlane");
     pthread_create(&thrLasergun, NULL, drawLasergun, "thrLasergun");
     pthread_create(&thrBeam, NULL, drawBeam, "thrBeam");
