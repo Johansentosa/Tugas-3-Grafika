@@ -81,6 +81,9 @@ int i;
 int window_width = 200;
 int window_height = 200;
 
+int zoom_width = 100;
+int zoom_height = 100;
+
 void setPoint(Point* p, int x, int y) {
     p -> x = x;
     p -> y = y;
@@ -101,10 +104,10 @@ void setColor(Color* c, char r, char g, char b) {
 }
 
 void changeARGB(int location, Color* c) {
-    *(fbp + location) = c -> a;
-    *(fbp + location + 1) = c -> r;
-    *(fbp + location + 2) = c -> g;
-    *(fbp + location + 3) = c -> b;
+    *(fbp + location) = c -> r;
+    *(fbp + location + 1) = c -> g;
+    *(fbp + location + 2) = c -> b;
+    *(fbp + location + 3) = c -> a;
 }
 
 void clearScreen(Color* c) {
@@ -141,6 +144,10 @@ void loadBuildings4() {
                 c = getc(file);
                 if (feof(file)) break;
         } while (c!='#');
+        do {
+                c = getc(file);
+                if (feof(file)) break;
+        } while (c!='\n');
         j = 0;
         if (!feof(file)) {
             // printf("building %d\n", i);
@@ -204,8 +211,7 @@ void drawZoomLineX(Point* p1, Point* p2, Color* c, int positif) {
 		}
 		else{
 			if(i<=window[0].x || i>=window[2].x || j<=window[0].y || j>=window[2].y){
-				location = (i + vinfo.xoffset) * bytePerPixel + (j + vinfo.yoffset) * finfo.line_length;
-				changeARGB(location, c);
+
 			}
 			else{
 				Color * temp = &c2;
@@ -235,8 +241,7 @@ void drawZoomLineY(Point* p1, Point* p2, Color* c, int positif) {
 		}
 		else{
 			if(i<=window[0].x || i>=window[2].x || j<=window[0].y || j>=window[2].y){
-				location = (i + vinfo.xoffset) * bytePerPixel + (j + vinfo.yoffset) * finfo.line_length;
-				changeARGB(location, c);
+
 			}
 			else{
 				Color * temp = &c2;
@@ -383,17 +388,29 @@ Point * initWindow(Point * window_center){
 	return window;
 }
 
+Point * initZoomWindow(Point * window_center){
+	Point * zoom = (Point*) malloc(5 * sizeof(Point));
+	int x = window_center->x;
+	int y = window_center->y;
+	setPoint(&zoom[0], x-zoom_width/2, y-zoom_height/2);
+	setPoint(&zoom[1], x+zoom_width/2, y-zoom_height/2);
+	setPoint(&zoom[2], x+zoom_width/2, y+zoom_height/2);
+	setPoint(&zoom[3], x-zoom_width/2, y+zoom_height/2);
+	setPoint(&zoom[4], x-zoom_width/2, y-zoom_height/2);
+	return zoom;
+}
+
 void drawBuilding(int zoom, Point* p, int numPoints, Color c) {
 	int k, i;
 	for (k = 0; k<zoom; k++) {
 		for (i = 0; i < numPoints-1; i++) {
 			drawLine(&p[i], &p[i+1], &c);
-			//p[i].x++;
-			//p[i].y++;
+			p[i].x++;
+			p[i].y++;
 		}
 		drawLine(&p[i], &p[0], &c);
-		//p[i].x++;
-		//sp[i].y++;
+		p[i].x++;
+		p[i].y++;
 	}
 }
 
@@ -405,6 +422,8 @@ void drawZoomBuilding(int zoom, Point* p, int numPoints, Color c) {
 			p[i].y++;
 		}
 		drawZoomLine(&p[i], &p[0], &c);
+		p[i].x++;
+		p[i].y++;
 }
 
 void drawMap(Building* building, Color c) {
@@ -442,8 +461,8 @@ void zoom(float zoom, Point * zoomPoint, Building * building){
 		for (b = 0; b < building[a].neff; b++) {
 			temp[a].P[b].x = (building[a].P[b].x * zoom) + deltax;
 			temp[a].P[b].y = (building[a].P[b].y * zoom) + deltay;
-			printf("%d %d\n",building[a].P[b].x,building[a].P[b].y);
-			printf("%d %d\n",temp[a].P[b].x,temp[a].P[b].y);
+			//printf("%d %d\n",building[a].P[b].x,building[a].P[b].y);
+			//printf("%d %d\n",temp[a].P[b].x,temp[a].P[b].y);
 		}
 	}
 	
@@ -454,12 +473,13 @@ void zoom(float zoom, Point * zoomPoint, Building * building){
 }
 
 int main() {
-    setColor(&bg, 0, 0, 255);
+    setColor(&bg, 0, 0, 0);
     connectBuffer();
     clearScreen(&bg);
     Color c, cDel;
     setColor(&c, 255, 0, 0);
     setColor(&c2, 0, 255, 255);
+    setColor(&cDel, 255, 255, 255);
 
     window_center = (Point*) malloc(1 * sizeof(Point));
 	setPoint(&window_center[0], 650, 200);
@@ -467,11 +487,12 @@ int main() {
 	Point * zoom2 = (Point*) malloc(5 * sizeof(Point));
 	setPoint(&zoomPoint[0], 300, 300);
 	window = initWindow(window_center);
-	zoom2 = initWindow(zoomPoint);
+	zoom2 = initZoomWindow(zoomPoint);
     clearScreen(&bg);
     int i,j;
     char ch;
     loadBuildings4();
+    float zoom_val = 2;
     while(1){
 		clearScreen(&bg);
 		//draw map
@@ -482,12 +503,28 @@ int main() {
 		}
 		
 		for(j = 0; j < 4; j++) {
-			drawLine(&zoom2[j], &zoom2[j + 1], &c);
+			drawLine(&zoom2[j], &zoom2[j + 1], &cDel);
 		}
 		sleep(3);
-		zoom(2,zoomPoint,building);
+		zoom(zoom_val,zoomPoint,building);
 		scanf("%c",&ch);
-		clearScreen(&bg);
+		switch (ch) {
+			case 'd': zoomPoint->x+=20; break;
+			case 's': zoomPoint->y+=20; break;
+			case 'a': zoomPoint->x-=20; break;
+			case 'w': zoomPoint->y-=20; break;
+			case 'z':
+				zoom_val*=2;
+				zoom_height=zoom_height/2;
+				zoom_width=zoom_width/2;
+				break;
+			case 'x':
+				zoom_val=zoom_val/2;
+				zoom_height*=2;
+				zoom_width*=2;
+				break;
+		}
+		zoom2 = initZoomWindow(zoomPoint);
 	}
     munmap(fbp, screensize);
     close(fbfd);
