@@ -20,43 +20,8 @@ typedef struct Colors {
     int b;
 } Color;
 
-typedef struct lines {
-	Point* p1;
-	Point* p2;
-} Line;
-
-typedef struct clipWindows {
-	double l; //batas kiri window, sb. x
-	double r; //batas kanan window, sb.x
-	double t; //batas atas window, sb. y
-	double b; //batas bawah window. sb. y
-} Clipwindow;
-
-typedef struct pointCodes {
-	//buat posisi garis thd clipwindow, didalem diluar apa terpotong clipwindow
-	//nilai 1 dan 0
-	int l;
-	int r;
-	int t;
-	int b;
-} Pointcode;
-
-
 struct fb_var_screeninfo vinfo;
 struct fb_fix_screeninfo finfo;
-
-struct readFallDownParams {
-	Point* p;
-	Point firepoint;
-	Color c;
-};
-
-struct readFallSpinParams {
-	Point* p;
-	Point firepoint;
-	Color c;
-	Point pivot;
-};
 
 Color bg; // warna background
 char* fbp; // memory map ke fb0
@@ -259,20 +224,25 @@ Point * initWindow(Point * window_center){
 	return window;
 }
 
-void zoom(int zoom, Point * zoomPoint, Point * plane, int i){
+void zoom(float zoom, Point * zoomPoint, Point * plane, int i){
 	Point * temp;
 	Point * zoomtemp;
 	zoomtemp = (Point*) malloc(1 * sizeof(Point));
 	zoomtemp[0].x = zoomPoint->x * zoom;
 	zoomtemp[0].y = zoomPoint->y * zoom;
-	int deltax = abs(zoomtemp[0].x - window_center->x);
-	int deltay = abs(zoomtemp[0].y - window_center->y);
+	int deltax = zoomtemp[0].x - window_center->x;
+	deltax=deltax*-1;
+	int deltay = zoomtemp[0].y - window_center->y;
+	deltay=deltay*-1;
 	temp = (Point*) malloc(i * sizeof(Point));
 	int j;
 	for(j = 0; j < i; j++) {
-		temp[j].x = (plane[j].x * zoom) - deltax;
-		temp[j].y = (plane[j].y * zoom) - deltay;
+		temp[j].x = (plane[j].x * zoom) + deltax;
+		temp[j].y = (plane[j].y * zoom) + deltay;
+		printf("%d\n",temp[j].x);
+		printf("%d\n",temp[j].y);
 	}
+	
 	Color c;
 	setColor(&c, 255, 0, 0);
 	int k=0;
@@ -334,7 +304,7 @@ int main() {
 	}
 	sleep(2);
 	clearScreen(&bg);
-	zoom(3,zoomPoint,plane,i);
+	zoom(0.25,zoomPoint,plane,i);
 	//drawLine(&window[0], &window[2], &c);
 	for(j = 0; j < 4; j++) {
 		drawLine(&window[j], &window[j + 1], &c);
