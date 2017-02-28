@@ -7,7 +7,7 @@
 #include <sys/ioctl.h>
 #include <pthread.h>
 #include <math.h>
-// #include "event.c"
+#include "event.c"
 
 typedef struct Points {
     int x;
@@ -47,6 +47,16 @@ typedef struct Buildings {
     Point * P;
 } Building;
 
+typedef struct Trees {
+	int neff;
+	Point *P;
+} Tree;
+
+typedef struct Streets {
+	int neff;
+	Point *P;
+} Street;
+
 struct fb_var_screeninfo vinfo;
 struct fb_fix_screeninfo finfo;
 
@@ -75,7 +85,12 @@ int overPixel = 10;
 Point * window;
 Color c2;
 int nBuilding = 0;
+int nBuilding2 = 0;
+int nTree = 0;
+int nStreet = 0;
 Building * building;
+Building * tree;
+Building * street;
 
 int i;
 int window_width = 200;
@@ -124,7 +139,7 @@ void clearScreen(Color* c) {
 }
 
 void loadBuildings4() {
-    printf("TES");
+    //printf("TES");
     char c;
     int valx, valy;
     Point pTemp;
@@ -165,7 +180,97 @@ void loadBuildings4() {
             i++;
         }
     };
-    nBuilding = i;
+    nBuilding2 = i;
+    fclose(file);
+}
+void loadTree() {
+    //printf("TES");
+    char c;
+    int valx, valy;
+    Point pTemp;
+    FILE *file;
+    file = fopen("pohon.txt", "r");
+    int i, j;
+    tree = malloc(200 * sizeof(Tree));
+    for (i = 0; i < 200; i++) {
+        tree[i].P = (Point *) malloc(50 * sizeof(Point));
+    }
+    int itbuilding;
+    int itpoint;
+    i = 0;
+
+    while (!feof(file)) {
+        do {
+                c = getc(file);
+                if (feof(file)) break;
+        } while (c!='#');
+        do {
+                c = getc(file);
+                if (feof(file)) break;
+        } while (c!='\n');
+        j = 0;
+        if (!feof(file)) {
+            // printf("building %d\n", i);
+            while (c = getc(file) != '#'){
+                fscanf (file, "%d", &valx);
+                fscanf (file, "%d", &valy);
+                //printf("%d %d\n",valx , valy);
+                setPoint(&tree[i].P[j], valx, valy);
+                //printf("%d %d\n", building[i].P[j].x, building[i].P[j].y);
+                // building.push_back(pTemp);
+                j++;
+            }
+            tree[i].neff = j;
+            // printf("%d\n", building[i].neff);
+            i++;
+        }
+    };
+    nTree = i;
+    fclose(file);
+}
+void loadStreet() {
+    //printf("TES");
+    char c;
+    int valx, valy;
+    Point pTemp;
+    FILE *file;
+    file = fopen("street.txt", "r");
+    int i, j;
+    street = malloc(200 * sizeof(Street));
+    for (i = 0; i < 200; i++) {
+        street[i].P = (Point *) malloc(50 * sizeof(Point));
+    }
+    int itbuilding;
+    int itpoint;
+    i = 0;
+
+    while (!feof(file)) {
+        do {
+                c = getc(file);
+                if (feof(file)) break;
+        } while (c!='#');
+        do {
+                c = getc(file);
+                if (feof(file)) break;
+        } while (c!='\n');
+        j = 0;
+        if (!feof(file)) {
+            // printf("building %d\n", i);
+            while (c = getc(file) != '#'){
+                fscanf (file, "%d", &valx);
+                fscanf (file, "%d", &valy);
+                //printf("%d %d\n",valx , valy);
+                setPoint(&street[i].P[j], valx, valy);
+                //printf("%d %d\n", building[i].P[j].x, building[i].P[j].y);
+                // building.push_back(pTemp);
+                j++;
+            }
+            street[i].neff = j;
+            // printf("%d\n", building[i].neff);
+            i++;
+        }
+    };
+    nStreet = i;
     fclose(file);
 }
 
@@ -405,12 +510,12 @@ void drawBuilding(int zoom, Point* p, int numPoints, Color c) {
 	for (k = 0; k<zoom; k++) {
 		for (i = 0; i < numPoints-1; i++) {
 			drawLine(&p[i], &p[i+1], &c);
-			p[i].x++;
-			p[i].y++;
+			//p[i].x++;
+			//p[i].y++;
 		}
 		drawLine(&p[i], &p[0], &c);
-		p[i].x++;
-		p[i].y++;
+		//p[i].x++;
+		//p[i].y++;
 	}
 }
 
@@ -418,12 +523,12 @@ void drawZoomBuilding(int zoom, Point* p, int numPoints, Color c) {
 	int k, i;
 		for (i = 0; i < numPoints-1; i++) {
 			drawZoomLine(&p[i], &p[i+1], &c);
-			p[i].x++;
-			p[i].y++;
+			//p[i].x++;
+			//p[i].y++;
 		}
 		drawZoomLine(&p[i], &p[0], &c);
-		p[i].x++;
-		p[i].y++;
+		//p[i].x++;
+		//p[i].y++;
 }
 
 void drawMap(Building* building, Color c) {
@@ -432,6 +537,7 @@ void drawMap(Building* building, Color c) {
 		drawBuilding(1, building[i].P, building[i].neff, c);
 	}
 }
+
 
 void drawZoomMap(Building* building, Color c) {
 	int i, j;
@@ -472,14 +578,19 @@ void zoom(float zoom, Point * zoomPoint, Building * building){
 	free(temp);
 }
 
+
 int main() {
     setColor(&bg, 0, 0, 0);
     connectBuffer();
     clearScreen(&bg);
     Color c, cDel;
+    Color cT;
+    Color cS;
     setColor(&c, 255, 0, 0);
     setColor(&c2, 0, 255, 255);
     setColor(&cDel, 255, 255, 255);
+    setColor(&cT, 0, 255, 0);
+    setColor(&cS, 0, 0, 255);
 
     window_center = (Point*) malloc(1 * sizeof(Point));
 	setPoint(&window_center[0], 650, 200);
@@ -492,11 +603,34 @@ int main() {
     int i,j;
     char ch;
     loadBuildings4();
+    loadStreet();
+    loadTree();
     float zoom_val = 2;
+    char stroke;
+    int alreadyPaintBuilding = 1;
+    int alreadyPaintTree = 1;
+    int alreadyPaintStreet = 1;
     while(1){
 		clearScreen(&bg);
 		//draw map
-		drawMap(building, c);
+		nBuilding = nBuilding2;
+		if (alreadyPaintBuilding == 1) {
+			drawMap(building, c);
+			zoom(zoom_val,zoomPoint,building);
+		
+		}
+		nBuilding = nTree;
+		if (alreadyPaintTree == 1) {
+			drawMap(tree, cT);
+			zoom(zoom_val,zoomPoint,tree);
+		
+		}
+		nBuilding = nStreet;
+		if (alreadyPaintStreet == 1) {
+			drawMap(street, cS);
+		zoom(zoom_val,zoomPoint,street);
+	
+		}
 		
 		for(j = 0; j < 4; j++) {
 			drawLine(&window[j], &window[j + 1], &c);
@@ -505,10 +639,10 @@ int main() {
 		for(j = 0; j < 4; j++) {
 			drawLine(&zoom2[j], &zoom2[j + 1], &cDel);
 		}
-		sleep(3);
-		zoom(zoom_val,zoomPoint,building);
-		scanf("%c",&ch);
-		switch (ch) {
+		
+		
+		stroke = getch();
+		switch (stroke) {
 			case 'd': zoomPoint->x+=20; break;
 			case 's': zoomPoint->y+=20; break;
 			case 'a': zoomPoint->x-=20; break;
@@ -523,6 +657,29 @@ int main() {
 				zoom_height*=2;
 				zoom_width*=2;
 				break;
+			case 't':
+				if(alreadyPaintTree == 0) {
+					alreadyPaintTree = 1;
+				} else {
+					alreadyPaintTree = 0;
+				}
+				break;
+			case 'j' :
+				if(alreadyPaintStreet == 0) {
+					alreadyPaintStreet = 1;
+				} else {
+					alreadyPaintStreet = 0;
+				}
+				break;
+			case 'b' :
+				if(alreadyPaintBuilding == 0) {
+					alreadyPaintBuilding = 1;
+				} else {
+					alreadyPaintBuilding = 0;
+				}
+				break;
+			
+					
 		}
 		zoom2 = initZoomWindow(zoomPoint);
 	}
