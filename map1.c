@@ -234,7 +234,7 @@ void loadStreet() {
     int valx, valy;
     Point pTemp;
     FILE *file;
-    file = fopen("street.txt", "r");
+    file = fopen("jalan.txt", "r");
     int i, j;
     street = malloc(200 * sizeof(Street));
     for (i = 0; i < 200; i++) {
