@@ -126,7 +126,7 @@ void loadBuildings4() {
     int valx, valy;
     Point pTemp;
     FILE *file;
-    file = fopen("building.txt", "r");
+    file = fopen("buildings.txt", "r");
     int i, j;
     building = malloc(500 * sizeof(Building));
     for (i = 0; i < 500; i++) {
@@ -143,7 +143,7 @@ void loadBuildings4() {
         } while (c!='#');
         j = 0;
         if (!feof(file)) {
-            printf("building %d\n", i);
+            // printf("building %d\n", i);
             while (c = getc(file) != '#'){
                 fscanf (file, "%d", &valx);
                 fscanf (file, "%d", &valy);
@@ -253,11 +253,9 @@ int getOctant (int dx, int dy) {
 }
 
 void drawLine(Point* p1, Point* p2, Color* c) {
-    printf("1");
     int dx = p2 -> x - p1 -> x;
     int dy = p2 -> y - p1 -> y;
-    int octant = getOctant(dx, dy);
-    printf("2");
+    int octant = getOctant(dx, dy);    
     // algoritma bresenham sebenernya hanya bisa menggambar di octant 0,
     // atur sedemikian rupa supaya 7 octant lainnya bisa masuk ke algoritma
     switch (octant) {
@@ -350,16 +348,16 @@ int main() {
     setColor(&c2, 0, 255, 255);
  //    int j;
  //    i = 10;
- //    Point* plane;
- //    plane = (Point*) malloc(i * sizeof(Point));
+    // Point* plane;
+    // plane = (Point*) malloc(i * sizeof(Point));
     
  //    //BAGIAN window
  //    Point * zoomPoint = (Point*) malloc(1 * sizeof(Point));
  //    Point * zoom2 = (Point*) malloc(4 * sizeof(Point));
- //    window_center = (Point*) malloc(1 * sizeof(Point));
-	// setPoint(&window_center[0], 400, 400);
+    window_center = (Point*) malloc(1 * sizeof(Point));
+	setPoint(&window_center[0], 400, 400);
 	// setPoint(&zoomPoint[0], 200, 200);
-	// window = initWindow(window_center);
+	window = initWindow(window_center);
 	// zoom2 = initWindow(zoomPoint);
 	
 	
@@ -374,7 +372,7 @@ int main() {
 	// setPoint(&plane[7], 300+n, 200+n);
 	// setPoint(&plane[8], 80+n, 200+n);
 	// setPoint(&plane[9], 100+n, 70+n);
-	// // gambar
+	// // // gambar
 	// for(j = 0; j < i-1; j++) {
 	// 	drawLine(&plane[j], &plane[j + 1], &c);
 	// }
@@ -395,25 +393,31 @@ int main() {
 	// 	drawLine(&window[j], &window[j + 1], &c);
 	// }
 	// sleep(2);
-    // loadBuildings4();
+    clearScreen(&bg);
+    loadBuildings4();
     //draw map
     int i,j;
-    // for(i = 0; i < nBuilding; i++) {
-    //     for(j = 0; j < building[i].neff-1; j++) {
+    for(i = 0; i < nBuilding; i++) {
+        for(j = 0; j < building[i].neff-1; j++) {
             // printf("%d %d\n", building[i].P[j].x, building[i].P[j].y);
             // printf("%d %d\n", building[i].P[j+1].x, building[i].P[j+1].y);
-            Point * temp;
-            temp = (Point*) malloc(3 * sizeof(Point));
-            setPoint(&temp[0], 0, 90);
-            setPoint(&temp[1], 40, 50);
-            printf("%d %d\n", temp[0].x, temp[0].y);
-            drawLine(&temp[0], &temp[1], &c);
-            printf("%d %d\n", temp[0].x, temp[0].y);
-            sleep(2);
+            // Point * temp;
+            // temp = (Point*) malloc(3 * sizeof(Point));
+            // setPoint(&temp[0], 0, 90);
+            // setPoint(&temp[1], 40, 50);
+            // printf("%d %d\n", temp[0].x, temp[0].y);
+            // drawLine(&temp[0], &temp[1], &c);
+            // printf("%d %d\n", temp[0].x, temp[0].y);
+            // sleep(2);
+            drawLine(&building[i].P[j], &building[i].P[j+1], &c);
+        }
+        drawLine(&building[i].P[j], &building[i].P[0], &c);
+    }
+    sleep(5);
     //     }
     // }
 	//drawLine(&window_center[0], &window_center[1], &c);
-	//clearScreen(&bg);
+	// clearScreen(&bg);
     munmap(fbp, screensize);
     close(fbfd);
     return 0;
