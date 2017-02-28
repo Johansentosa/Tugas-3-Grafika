@@ -78,8 +78,8 @@ int nBuilding = 0;
 Building * building;
 
 int i;
-int window_width = 100;
-int window_height = 100;
+int window_width = 200;
+int window_height = 200;
 
 void setPoint(Point* p, int x, int y) {
     p -> x = x;
@@ -317,26 +317,27 @@ void zoom(int zoom, Point * zoomPoint, Point * plane, int i){
 	zoomtemp = (Point*) malloc(1 * sizeof(Point));
 	zoomtemp[0].x = zoomPoint->x * zoom;
 	zoomtemp[0].y = zoomPoint->y * zoom;
-	int deltax = abs(zoomtemp[0].x - window_center->x);
-	int deltay = abs(zoomtemp[0].y - window_center->y);
+	int deltax = zoomtemp[0].x - window_center->x;
+	deltax=deltax*-1;
+	int deltay = zoomtemp[0].y - window_center->y;
+	deltay=deltay*-1;
 	temp = (Point*) malloc(i * sizeof(Point));
 	int j;
 	for(j = 0; j < i; j++) {
-		temp[j].x = (plane[j].x * zoom) - deltax;
-		temp[j].y = (plane[j].y * zoom) - deltay;
+		temp[j].x = (plane[j].x * zoom) + deltax;
+		temp[j].y = (plane[j].y * zoom) + deltay;
 	}
+	
 	Color c;
 	setColor(&c, 255, 0, 0);
 	int k=0;
 	for(k = 0; k < zoom; k++) {
 		for(j = 0; j < i-1; j++) {
 			drawLine(&temp[j], &temp[j + 1], &c);
-			temp[j].x++;
 			temp[j].y++;
 		}
 	}
 	free(temp);
-	
 }
 
 int main() {
@@ -346,78 +347,28 @@ int main() {
     Color c, cDel;
     setColor(&c, 255, 0, 0);
     setColor(&c2, 0, 255, 255);
- //    int j;
- //    i = 10;
-    // Point* plane;
-    // plane = (Point*) malloc(i * sizeof(Point));
-    
- //    //BAGIAN window
- //    Point * zoomPoint = (Point*) malloc(1 * sizeof(Point));
- //    Point * zoom2 = (Point*) malloc(4 * sizeof(Point));
+
     window_center = (Point*) malloc(1 * sizeof(Point));
-	setPoint(&window_center[0], 400, 400);
-	// setPoint(&zoomPoint[0], 200, 200);
+	setPoint(&window_center[0], 650, 200);
 	window = initWindow(window_center);
-	// zoom2 = initWindow(zoomPoint);
-	
-	
- //    int n = 0;
- //    setPoint(&plane[0], n, 90+n);
-	// setPoint(&plane[1], 40+n, 50+n);
-	// setPoint(&plane[2], 190+n, 50+n);
-	// setPoint(&plane[3], 220+n, 20+n);
-	// setPoint(&plane[4], 260+n, 20+n);
-	// setPoint(&plane[5], 190+n, 90+n);
-	// setPoint(&plane[6], 260+n, 150+n);
-	// setPoint(&plane[7], 300+n, 200+n);
-	// setPoint(&plane[8], 80+n, 200+n);
-	// setPoint(&plane[9], 100+n, 70+n);
-	// // // gambar
-	// for(j = 0; j < i-1; j++) {
-	// 	drawLine(&plane[j], &plane[j + 1], &c);
-	// }
-	
-	// //drawLine(&window[0], &window[2], &c);
-	// for(j = 0; j < 4; j++) {
-	// 	drawLine(&window[j], &window[j + 1], &c);
-	// }
-	
-	// for(j = 0; j < 4; j++) {
-	// 	drawLine(&zoom2[j], &zoom2[j + 1], &c);
-	// }
-	// sleep(2);
-	// clearScreen(&bg);
-	// zoom(3,zoomPoint,plane,i);
-	// //drawLine(&window[0], &window[2], &c);
-	// for(j = 0; j < 4; j++) {
-	// 	drawLine(&window[j], &window[j + 1], &c);
-	// }
-	// sleep(2);
     clearScreen(&bg);
-    loadBuildings4();
-    //draw map
     int i,j;
-    for(i = 0; i < nBuilding; i++) {
-        for(j = 0; j < building[i].neff-1; j++) {
-            // printf("%d %d\n", building[i].P[j].x, building[i].P[j].y);
-            // printf("%d %d\n", building[i].P[j+1].x, building[i].P[j+1].y);
-            // Point * temp;
-            // temp = (Point*) malloc(3 * sizeof(Point));
-            // setPoint(&temp[0], 0, 90);
-            // setPoint(&temp[1], 40, 50);
-            // printf("%d %d\n", temp[0].x, temp[0].y);
-            // drawLine(&temp[0], &temp[1], &c);
-            // printf("%d %d\n", temp[0].x, temp[0].y);
-            // sleep(2);
-            drawLine(&building[i].P[j], &building[i].P[j+1], &c);
-        }
-        drawLine(&building[i].P[j], &building[i].P[0], &c);
-    }
-    sleep(5);
-    //     }
-    // }
-	//drawLine(&window_center[0], &window_center[1], &c);
-	// clearScreen(&bg);
+    char ch;
+    loadBuildings4();
+    while(1){
+		clearScreen(&bg);
+		//draw map
+		for(i = 0; i < nBuilding; i++) {
+			for(j = 0; j < building[i].neff-1; j++) {
+				drawLine(&building[i].P[j], &building[i].P[j+1], &c);
+			}
+			drawLine(&building[i].P[j], &building[i].P[0], &c);
+		}
+		for(j = 0; j < 4; j++) {
+			drawLine(&window[j], &window[j + 1], &c);
+		}
+		scanf("%c",&ch);
+	}
     munmap(fbp, screensize);
     close(fbfd);
     return 0;
