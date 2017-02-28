@@ -128,9 +128,9 @@ void loadBuildings4() {
     FILE *file;
     file = fopen("buildings.txt", "r");
     int i, j;
-    building = malloc(500 * sizeof(Building));
-    for (i = 0; i < 500; i++) {
-        building[i].P = (Point *) malloc(500 * sizeof(Point));
+    building = malloc(200 * sizeof(Building));
+    for (i = 0; i < 200; i++) {
+        building[i].P = (Point *) malloc(50 * sizeof(Point));
     }
     int itbuilding;
     int itpoint;
@@ -162,7 +162,36 @@ void loadBuildings4() {
     fclose(file);
 }
 
-void drawLineX(Point* p1, Point* p2, Color* c, int positif) {
+int getOctant (int dx, int dy) {
+    /*  peta octant:
+        \2|1/
+        3\|/0
+        --+--
+        4/|\7
+        /5|6\
+    */
+
+    if (dy >= 0 && dy < dx) {
+        return 0;
+    } else if (dx > 0 && dx <= dy) {
+        return 1;
+    } else if (dx <= 0 && dx > -dy) {
+        return 2;
+    } else if (dy > 0 && dy <= -dx) {
+        return 3;
+    } else if (dy <= 0 && dy > dx) {
+        return 4;
+    } else if (dx < 0 && dx >= dy) {
+        return 5;
+    } else if (dx >= 0 && dx < -dy) {
+        return 6;
+    } else { // dy < 0 && dy >= -dx
+        return 7;
+    }
+}
+
+/*==============DRAW LINE UNTUK ZOOM==================*/
+void drawZoomLineX(Point* p1, Point* p2, Color* c, int positif) {
 	// algoritma Bresenham
     int dx = p2 -> x - p1 -> x;
     int dy = (p2 -> y - p1 -> y) * positif;
@@ -193,7 +222,7 @@ void drawLineX(Point* p1, Point* p2, Color* c, int positif) {
     }
 }
 
-void drawLineY(Point* p1, Point* p2, Color* c, int positif) {
+void drawZoomLineY(Point* p1, Point* p2, Color* c, int positif) {
 	// algoritma Bresenham
     int dx = (p2 -> x - p1 -> x) * positif;
     int dy = p2 -> y - p1 -> y;
@@ -224,31 +253,72 @@ void drawLineY(Point* p1, Point* p2, Color* c, int positif) {
     }
 }
 
-int getOctant (int dx, int dy) {
-    /*  peta octant:
-        \2|1/
-        3\|/0
-        --+--
-        4/|\7
-        /5|6\
-    */
 
-    if (dy >= 0 && dy < dx) {
-        return 0;
-    } else if (dx > 0 && dx <= dy) {
-        return 1;
-    } else if (dx <= 0 && dx > -dy) {
-        return 2;
-    } else if (dy > 0 && dy <= -dx) {
-        return 3;
-    } else if (dy <= 0 && dy > dx) {
-        return 4;
-    } else if (dx < 0 && dx >= dy) {
-        return 5;
-    } else if (dx >= 0 && dx < -dy) {
-        return 6;
-    } else { // dy < 0 && dy >= -dx
-        return 7;
+void drawZoomLine(Point* p1, Point* p2, Color* c) {
+    int dx = p2 -> x - p1 -> x;
+    int dy = p2 -> y - p1 -> y;
+    int octant = getOctant(dx, dy);    
+    // algoritma bresenham sebenernya hanya bisa menggambar di octant 0,
+    // atur sedemikian rupa supaya 7 octant lainnya bisa masuk ke algoritma
+    switch (octant) {
+        case 0: drawZoomLineX(p1, p2, c, 1); break;
+        case 1: drawZoomLineY(p1, p2, c, 1); break;
+        case 2: drawZoomLineY(p1, p2, c, -1); break;
+        case 3: swapPoint(p1, p2); drawZoomLineX(p1, p2, c, -1); swapPoint(p1, p2); break;
+        case 4: swapPoint(p1, p2); drawZoomLineX(p1, p2, c, 1); swapPoint(p1, p2); break;
+        case 5: swapPoint(p1, p2); drawZoomLineY(p1, p2, c, 1); swapPoint(p1, p2); break;
+        case 6: swapPoint(p1, p2); drawZoomLineY(p1, p2, c, -1); swapPoint(p1, p2); break;
+        case 7: drawZoomLineX(p1, p2, c, -1); break;
+    }
+}
+/*------------------------------------------------------*/
+
+/*==============DRAW LINE UNTUK BIASA===========*/
+void drawLineX(Point* p1, Point* p2, Color* c, int positif) {
+	// algoritma Bresenham
+    int dx = p2 -> x - p1 -> x;
+    int dy = (p2 -> y - p1 -> y) * positif;
+    int d = dy + dy - dx;
+    int j = p1 -> y;
+    int i, location;
+    // lebih panjang horizontal, maka iterasi berdasarkan x
+    for (i = p1 -> x; i <= p2 -> x; i++) {
+		if(i<0 || i>vinfo.xres-1 || j<0 || j>vinfo.yres-1){
+		}
+		else{
+			location = (i + vinfo.xoffset) * bytePerPixel + (j + vinfo.yoffset) * finfo.line_length;
+			changeARGB(location, c);
+		}
+        if (d > 0) {
+            // positif = 1 berarti y makin lama makin bertambah
+            j += positif;
+            d -= dx;
+        }
+        d += dy;
+    }
+}
+
+void drawLineY(Point* p1, Point* p2, Color* c, int positif) {
+	// algoritma Bresenham
+    int dx = (p2 -> x - p1 -> x) * positif;
+    int dy = p2 -> y - p1 -> y;
+    int d = dx + dx - dy;
+    int i = p1 -> x;
+    int j, location;
+    // lebih panjang vertikal, maka iterasi berdasarkan y
+    for (j = p1 -> y; j <= p2 -> y; j++) {
+		if(i<0 || i>vinfo.xres-1 || j<0 || j>vinfo.yres-1){
+		}
+		else{
+			location = (i + vinfo.xoffset) * bytePerPixel + (j + vinfo.yoffset) * finfo.line_length;
+			changeARGB(location, c);
+		}
+        if (d > 0) {
+            // positif = 1 berarti x makin lama makin bertambah
+            i += positif;
+            d -= dy;
+        }
+        d += dx;
     }
 }
 
@@ -258,6 +328,8 @@ void drawLine(Point* p1, Point* p2, Color* c) {
     int octant = getOctant(dx, dy);    
     // algoritma bresenham sebenernya hanya bisa menggambar di octant 0,
     // atur sedemikian rupa supaya 7 octant lainnya bisa masuk ke algoritma
+    //printf("%d-%d\n",p1->x,p1->y);
+    //printf("%d-%d\n",p2->x,p2->y);
     switch (octant) {
         case 0: drawLineX(p1, p2, c, 1); break;
         case 1: drawLineY(p1, p2, c, 1); break;
@@ -269,6 +341,7 @@ void drawLine(Point* p1, Point* p2, Color* c) {
         case 7: drawLineX(p1, p2, c, -1); break;
     }
 }
+/*------------------------------------------------------*/
 
 void connectBuffer() {
     // Open the file for reading and writing
@@ -310,9 +383,44 @@ Point * initWindow(Point * window_center){
 	return window;
 }
 
+void drawBuilding(int zoom, Point* p, int numPoints, Color c) {
+	int k, i;
+	for (k = 0; k<zoom; k++) {
+		for (i = 0; i < numPoints-1; i++) {
+			drawLine(&p[i], &p[i+1], &c);
+			//p[i].x++;
+			//p[i].y++;
+		}
+		drawLine(&p[i], &p[0], &c);
+		//p[i].x++;
+		//sp[i].y++;
+	}
+}
 
-void zoom(int zoom, Point * zoomPoint, Point * plane, int i){
-	Point * temp;
+void drawZoomBuilding(int zoom, Point* p, int numPoints, Color c) {
+	int k, i;
+		for (i = 0; i < numPoints-1; i++) {
+			drawZoomLine(&p[i], &p[i+1], &c);
+			p[i].x++;
+			p[i].y++;
+		}
+		drawZoomLine(&p[i], &p[0], &c);
+}
+
+void drawMap(Building* building, Color c) {
+	int i, j;
+	for(i = 0; i < nBuilding; i++) {
+		drawBuilding(1, building[i].P, building[i].neff, c);
+	}
+}
+
+void drawZoomMap(Building* building, Color c) {
+	int i, j;
+	for(i = 0; i < nBuilding; i++) {
+		drawZoomBuilding(1, building[i].P, building[i].neff, c);
+	}
+}
+void zoom(float zoom, Point * zoomPoint, Building * building){
 	Point * zoomtemp;
 	zoomtemp = (Point*) malloc(1 * sizeof(Point));
 	zoomtemp[0].x = zoomPoint->x * zoom;
@@ -321,22 +429,27 @@ void zoom(int zoom, Point * zoomPoint, Point * plane, int i){
 	deltax=deltax*-1;
 	int deltay = zoomtemp[0].y - window_center->y;
 	deltay=deltay*-1;
-	temp = (Point*) malloc(i * sizeof(Point));
-	int j;
-	for(j = 0; j < i; j++) {
-		temp[j].x = (plane[j].x * zoom) + deltax;
-		temp[j].y = (plane[j].y * zoom) + deltay;
+	
+	Building * temp;
+	temp = malloc(nBuilding * sizeof(Building));
+	for (int it = 0; it < nBuilding; it++) {
+		temp[it].neff = building[it].neff;
+        temp[it].P = (Point *) malloc(50 * sizeof(Point));
+    }
+    
+	int a, b;
+	for(a = 0; a < nBuilding; a++) {
+		for (b = 0; b < building[a].neff; b++) {
+			temp[a].P[b].x = (building[a].P[b].x * zoom) + deltax;
+			temp[a].P[b].y = (building[a].P[b].y * zoom) + deltay;
+			printf("%d %d\n",building[a].P[b].x,building[a].P[b].y);
+			printf("%d %d\n",temp[a].P[b].x,temp[a].P[b].y);
+		}
 	}
 	
 	Color c;
 	setColor(&c, 255, 0, 0);
-	int k=0;
-	for(k = 0; k < zoom; k++) {
-		for(j = 0; j < i-1; j++) {
-			drawLine(&temp[j], &temp[j + 1], &c);
-			temp[j].y++;
-		}
-	}
+	drawZoomMap(temp, c);
 	free(temp);
 }
 
@@ -350,7 +463,11 @@ int main() {
 
     window_center = (Point*) malloc(1 * sizeof(Point));
 	setPoint(&window_center[0], 650, 200);
+	Point * zoomPoint = (Point*) malloc(1 * sizeof(Point));
+	Point * zoom2 = (Point*) malloc(5 * sizeof(Point));
+	setPoint(&zoomPoint[0], 300, 300);
 	window = initWindow(window_center);
+	zoom2 = initWindow(zoomPoint);
     clearScreen(&bg);
     int i,j;
     char ch;
@@ -358,16 +475,19 @@ int main() {
     while(1){
 		clearScreen(&bg);
 		//draw map
-		for(i = 0; i < nBuilding; i++) {
-			for(j = 0; j < building[i].neff-1; j++) {
-				drawLine(&building[i].P[j], &building[i].P[j+1], &c);
-			}
-			drawLine(&building[i].P[j], &building[i].P[0], &c);
-		}
+		drawMap(building, c);
+		
 		for(j = 0; j < 4; j++) {
 			drawLine(&window[j], &window[j + 1], &c);
 		}
+		
+		for(j = 0; j < 4; j++) {
+			drawLine(&zoom2[j], &zoom2[j + 1], &c);
+		}
+		sleep(3);
+		zoom(2,zoomPoint,building);
 		scanf("%c",&ch);
+		clearScreen(&bg);
 	}
     munmap(fbp, screensize);
     close(fbfd);
