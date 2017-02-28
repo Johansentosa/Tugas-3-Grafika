@@ -4,11 +4,7 @@
 #include <vector>
 #include <iostream>
 
-#define numBuildings4 4
-#define numBuildings8 4
-
 using namespace std;
-
 	
 typedef struct Points {
     int x;
@@ -68,20 +64,28 @@ void printchar() {
 }
 void loadBuildings4() {
 	cout<< "TES"<<endl;
-	cout<< "while";
 	char c;
 	int valx, valy;
 	Point pTemp;
 	FILE *file;
 	file = fopen("buildings.txt", "r");
 	vector<Point> building;
+	int numBuildings =0;
 	int itbuilding;
 	int itpoint;
 	while (!feof(file)) {
-		do {
-				c = getc(file);
-				if (feof(file)) break;
-		} while (c!='#');
+		//Cari tanda pagar
+		c = getc(file);
+		while (c != '#') {
+			c = getc(file);
+			if (feof(file)) break;
+		} //c = '#'
+		cout<<c;
+		//Cari newline
+		while (c != '\n') {
+			c = getc(file);
+			if (feof(file)) break;
+		} //c = '\n'
 		
 		if (!feof(file)) {
 			while (c = getc(file) != '#'){
@@ -98,6 +102,7 @@ void loadBuildings4() {
 		}
 	};
 	fclose(file);
+	cout<<"LOADED"<<endl;
 	//print
 	for (int itbuilding = 0; itbuilding < Buildings.size(); itbuilding++) {
 		cout<<"Building number "<<itbuilding+1<<endl;
